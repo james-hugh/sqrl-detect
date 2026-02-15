@@ -8,23 +8,29 @@
 #include <sys/types.h>
 
 void log_event(const char *event) {
-    // Ensure logs directory exists
-    struct stat st = {0};
-    if (stat("logs", &st) == -1) {
-        mkdir("logs", 0700);
-    }
+    // Ensure logs directory exists with strict permissions
+    mkdir("logs", 0700);
 
+    // Set umask to ensure log file is created with owner-only permissions (0600)
+    mode_t old_umask = umask(0077);
     FILE *fp = fopen("logs/holy_scrolls.txt", "a");
+    umask(old_umask);
+
     if (fp == NULL) {
         return;
     }
+
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        size_t len = strlen(timestamp);
+        if (len > 0 && timestamp[len - 1] == '\n') {
+            timestamp[len - 1] = '\0';
+        }
     } else {
         timestamp = "UNKNOWN TIME";
     }
+
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
 }
@@ -113,26 +119,36 @@ int main() {
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     int prayer_count = 0;
+    log_event("AUTHENTICATION ATTEMPT: User requested access.");
+
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Remove trailing newline for exact string comparison (prevents substring bypass)
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
+            log_event("AUTHENTICATION FAILURE: Incorrect prayer recitation.");
             printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 1;
         }
     }
 
     if (prayer_count == 3) {
+        log_event("AUTHENTICATION SUCCESSFUL: Sentinel access granted.");
         printf("\nAuthentication successful. Welcome, Sentinel.\n");
         printf("1. ENGAGE DEFENSES\n");
         printf("2. EXIT (COWARDLY)\n");
         printf("> ");
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        // Sanitize input
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
             engage_defenses();
         } else {
             printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
