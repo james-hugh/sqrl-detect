@@ -8,10 +8,15 @@
 #include <sys/types.h>
 
 void log_event(const char *event) {
-    // Ensure logs directory exists
-    struct stat st = {0};
-    if (stat("logs", &st) == -1) {
-        mkdir("logs", 0700);
+    // Optimization: Use a static flag to only check for the logs directory once,
+    // avoiding redundant 'stat' and 'mkdir' system calls on every log entry.
+    static int logs_dir_checked = 0;
+    if (!logs_dir_checked) {
+        struct stat st = {0};
+        if (stat("logs", &st) == -1) {
+            mkdir("logs", 0700);
+        }
+        logs_dir_checked = 1;
     }
 
     FILE *fp = fopen("logs/holy_scrolls.txt", "a");
@@ -21,7 +26,9 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        // Optimization: ctime returns a 26-char string with a newline at index 24.
+        // Replacing strlen() with a direct index access is faster.
+        timestamp[24] = '\0'; // Remove newline
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -30,27 +37,22 @@ void log_event(const char *event) {
 }
 
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
+    // Optimization: Use a single printf call with variable precision to print the bar.
+    // This avoids 20+ individual printf calls in a loop.
     int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            printf("#");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    printf("SQUIRREL THREAT METER: [%.*s%.*s] %d%%\n",
+           bars, "####################",
+           20 - bars, "--------------------",
+           level);
 }
 
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS:\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            printf("*");
-        }
-        printf("\n");
+        // Optimization: Use variable precision (%.*s) to print 'val' stars in one go,
+        // replacing the inner loop and multiple printf calls.
+        printf("%2d |%.*s\n", val, val, "********************");
     }
     printf("   +--------------------\n");
 }
