@@ -1,3 +1,14 @@
+/*
+ * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
+ * Version: 0.69
+ * Platform: WINDOWS ME ONLY (GLORY BE)
+ *
+ * "Watching your network with the vigilance of Polish cows on 3 AM cocaine laps."
+ *
+ * This software is a simulated security tool designed to monitor 'threats'
+ * using ASCII-based visualizations and random event generation.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,34 +18,62 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-void log_event(const char *event) {
-    // Ensure logs directory exists
-    struct stat st = {0};
-    if (stat("logs", &st) == -1) {
-        mkdir("logs", 0700);
-    }
+/* --- CONFIGURATION MACROS --- */
+#define VERSION "0.69"
+#define PLATFORM "WINDOWS ME (GLORY BE)"
+#define LOG_DIR "logs"
+#define LOG_FILE "logs/holy_scrolls.txt"
 
-    FILE *fp = fopen("logs/holy_scrolls.txt", "a");
+/* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ */
+void init_system() {
+    srand(time(NULL));
+    struct stat st = {0};
+    if (stat(LOG_DIR, &st) == -1) {
+        mkdir(LOG_DIR, 0700);
+    }
+}
+
+/**
+ * Logs a message to the holy scrolls of truth.
+ * @param event The event message to log.
+ */
+void log_event(const char *event) {
+    FILE *fp = fopen(LOG_FILE, "a");
     if (fp == NULL) {
+        perror("Failed to open holy scrolls for writing");
         return;
     }
+
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
     } else {
         timestamp = "UNKNOWN TIME";
     }
+
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
 }
 
+/* --- VISUALIZATION ENGINE --- */
+
+/**
+ * Renders the squirrel threat meter.
+ * @param level Threat level from 0 to 100.
+ */
 void print_threat_meter(int level) {
     printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
     for (int i = 0; i < 20; i++) {
         if (i < bars) {
-            printf("#");
+            if (level > 80) printf("!");
+            else if (level > 50) printf("#");
+            else printf("=");
         } else {
             printf("-");
         }
@@ -42,19 +81,29 @@ void print_threat_meter(int level) {
     printf("] %d%%\n", level);
 }
 
+/**
+ * Renders the GUI graph of chaos.
+ */
 void print_graph_of_chaos() {
-    printf("GUI GRAPH OF CHAOS:\n");
+    printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
         for (int j = 0; j < val; j++) {
-            printf("*");
+            if (val > 15) printf("X");
+            else if (val > 8) printf("*");
+            else printf(".");
         }
         printf("\n");
     }
-    printf("   +--------------------\n");
+    printf("   +-------------------- (Acorns/sec)\n");
 }
 
+/* --- CORE ENGINE LOGIC --- */
+
+/**
+ * Returns a random threat message for the paranoid user.
+ */
 const char* get_random_threat() {
     const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
@@ -69,6 +118,9 @@ const char* get_random_threat() {
     return threats[rand() % 8];
 }
 
+/**
+ * Enters the main monitoring loop.
+ */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
@@ -79,8 +131,8 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v0.69\n");
-        printf("PLATFORM: WINDOWS ME (GLORY BE)\n\n");
+        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -105,14 +157,17 @@ void engage_defenses() {
     }
 }
 
-int main() {
-    srand(time(NULL));
-
+/**
+ * Handles user authentication via the sacred prayer.
+ * @return 1 if authenticated, 0 otherwise.
+ */
+int authenticate_user() {
     char command[100];
-    printf("🖥️  STNM3K v0.69 INITIALIZED\n");
+    int prayer_count = 0;
+
+    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
-    int prayer_count = 0;
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
@@ -120,25 +175,35 @@ int main() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 1;
+            printf("\nINCORRECT PRAYER.\n");
+            printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            return 0;
         }
     }
 
-    if (prayer_count == 3) {
-        printf("\nAuthentication successful. Welcome, Sentinel.\n");
-        printf("1. ENGAGE DEFENSES\n");
-        printf("2. EXIT (COWARDLY)\n");
-        printf("> ");
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    return 1;
+}
 
-        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-            engage_defenses();
-        } else {
-            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
-        }
+/* --- MAIN ENTRY POINT --- */
+
+int main() {
+    init_system();
+
+    if (!authenticate_user()) {
+        return 1;
+    }
+
+    char command[100];
+    printf("1. ENGAGE DEFENSES\n");
+    printf("2. EXIT (COWARDLY)\n");
+    printf("> ");
+    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+
+    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        engage_defenses();
     } else {
-        printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
 
     return 0;
