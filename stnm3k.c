@@ -7,6 +7,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define RESET "\x1B[0m"
+
 void log_event(const char *event) {
     // Ensure logs directory exists
     struct stat st = {0};
@@ -30,16 +35,30 @@ void log_event(const char *event) {
 }
 
 void print_threat_meter(int level) {
+    const char* color = GRN;
+    const char* label = "SECURE";
+
+    if (level >= 86) {
+        color = RED;
+        label = "RED SQUIRREL ALERT";
+    } else if (level >= 71) {
+        color = YEL;
+        label = "YELLOW ACORN ALERT";
+    } else if (level >= 41) {
+        color = YEL;
+        label = "CAUTION";
+    }
+
     printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
     for (int i = 0; i < 20; i++) {
         if (i < bars) {
-            printf("#");
+            printf("%s#%s", color, RESET);
         } else {
             printf("-");
         }
     }
-    printf("] %d%%\n", level);
+    printf("] %d%% [%s]\n", level, label);
 }
 
 void print_graph_of_chaos() {
@@ -93,7 +112,11 @@ void engage_defenses() {
 
         if (threat_level > 70) {
             const char* threat = get_random_threat();
-            printf("\n!!! MAXIMUM ALERT MODE !!!\n");
+            if (threat_level >= 86) {
+                printf("\n" RED "!!! RED SQUIRREL ALERT !!!" RESET "\n");
+            } else {
+                printf("\n" YEL "!!! YELLOW ACORN ALERT !!!" RESET "\n");
+            }
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
