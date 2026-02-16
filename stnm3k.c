@@ -14,7 +14,11 @@ void log_event(const char *event) {
         mkdir("logs", 0700);
     }
 
+    // Set umask to 0077 to ensure files are created with 0600 permissions
+    mode_t old_umask = umask(0077);
     FILE *fp = fopen("logs/holy_scrolls.txt", "a");
+    umask(old_umask);
+
     if (fp == NULL) {
         return;
     }
@@ -117,24 +121,35 @@ int main() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Strip newline for exact matching
+        command[strcspn(command, "\r\n")] = 0;
+
+        // Use exact matching as per security directive to prevent bypasses
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
+            log_event("AUTHENTICATION STEP SUCCESSFUL.");
         } else {
+            log_event("AUTHENTICATION FAILURE: INCORRECT PRAYER.");
             printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 1;
         }
     }
 
     if (prayer_count == 3) {
+        log_event("AUTHENTICATION COMPLETE. ACCESS GRANTED.");
         printf("\nAuthentication successful. Welcome, Sentinel.\n");
         printf("1. ENGAGE DEFENSES\n");
         printf("2. EXIT (COWARDLY)\n");
         printf("> ");
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        // Strip newline
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
             engage_defenses();
         } else {
+            log_event("SESSION ENDED BY USER.");
             printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
         }
     } else {

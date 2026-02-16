@@ -1,0 +1,4 @@
+## 2026-02-16 - [Fix Authentication Bypass and Implement Audit Logging]
+**Vulnerability:** The application used `strstr` for authentication matching, allowing bypasses with longer strings (e.g., "GLORY BEYOND"). Additionally, authentication attempts were not logged, and log files had overly permissive default permissions (0664).
+**Learning:** Substring matching for authentication is a common pitfall in C applications. Precise input handling, including stripping newlines and using `strcmp`, is critical. Defensive umask settings during log creation prevent unauthorized access to sensitive audit trails.
+**Prevention:** Enforce exact string matching for all authentication steps. Implement comprehensive audit logging for all access attempts. Use `umask` to restrict log file access to the owner.
