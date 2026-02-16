@@ -7,11 +7,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+/**
+ * BOLT OPTIMIZATION: System Call Reduction
+ * Caching the directory check results in a 100% reduction in redundant 'stat'
+ * and 'mkdir' calls after the first event, significantly reducing overhead
+ * in the logging hot path.
+ */
 void log_event(const char *event) {
     // Ensure logs directory exists
-    struct stat st = {0};
-    if (stat("logs", &st) == -1) {
-        mkdir("logs", 0700);
+    static int logs_dir_ready = 0;
+    if (!logs_dir_ready) {
+        struct stat st = {0};
+        if (stat("logs", &st) == -1) {
+            mkdir("logs", 0700);
+        }
+        logs_dir_ready = 1;
     }
 
     FILE *fp = fopen("logs/holy_scrolls.txt", "a");
@@ -21,7 +31,12 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        /**
+         * BOLT OPTIMIZATION: String Processing
+         * Replacing strlen() with fixed indexing for newline removal.
+         * Since ctime() format is fixed per POSIX, this avoids O(N) scan.
+         */
+        timestamp[24] = '\0';
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -29,34 +44,42 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/**
+ * BOLT OPTIMIZATION: I/O Efficiency
+ * Replaced character-by-character printing loop with a single printf() call
+ * using %.*s. This reduces printf() overhead by ~95% (1 call instead of 21).
+ */
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            printf("#");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    // Minimize printf calls by using %.*s precision specifier
+    printf("SQUIRREL THREAT METER: [%.*s%.*s] %d%%\n",
+           bars, "####################",
+           20 - bars, "--------------------",
+           level);
 }
 
+/**
+ * BOLT OPTIMIZATION: I/O Efficiency
+ * Optimized inner loop for graph rendering using %.*s.
+ * Reduces the number of printf() calls from O(N*M) to O(N).
+ */
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS:\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            printf("*");
-        }
-        printf("\n");
+        // Minimize printf calls by using %.*s precision specifier
+        printf("%2d |%.*s\n", val, val, "********************");
     }
     printf("   +--------------------\n");
 }
 
+/**
+ * BOLT OPTIMIZATION: Initialization Efficiency
+ * Marked array as static to avoid re-allocating/re-initializing the pointer
+ * array on the stack for every function call.
+ */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",

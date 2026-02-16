@@ -1,0 +1,3 @@
+## 2026-02-16 - CLI Rendering and I/O Optimization in C
+**Learning:** For CLI-based monitoring tools, character-by-character printing loops are a significant source of overhead. Using the `%.*s` precision specifier allows printing repeated characters in a single `printf` call, which is much more efficient. Additionally, caching system call results (like directory checks) using `static` flags prevents redundant kernel transitions.
+**Action:** Always prefer vectorized or buffered output over single-character I/O in hot paths. Use `static` variables to cache results of expensive environment setup or validation steps.
