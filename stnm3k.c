@@ -9,9 +9,13 @@
 
 void log_event(const char *event) {
     // Ensure logs directory exists
-    struct stat st = {0};
-    if (stat("logs", &st) == -1) {
-        mkdir("logs", 0700);
+    static int logs_dir_ready = 0;
+    if (!logs_dir_ready) {
+        struct stat st = {0};
+        if (stat("logs", &st) == -1) {
+            mkdir("logs", 0700);
+        }
+        logs_dir_ready = 1;
     }
 
     FILE *fp = fopen("logs/holy_scrolls.txt", "a");
@@ -21,7 +25,7 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        timestamp[24] = '\0'; // Optimized: ctime() output is always 26 chars (including \n and \0)
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -30,33 +34,26 @@ void log_event(const char *event) {
 }
 
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            printf("#");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    // Optimized: Replace loop with %.*s precision specifiers
+    printf("SQUIRREL THREAT METER: [%.*s%.*s] %d%%\n",
+           bars, "####################",
+           20 - bars, "--------------------",
+           level);
 }
 
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS:\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            printf("*");
-        }
-        printf("\n");
+        // Optimized: Replace nested loop with %.*s
+        printf("%2d |%.*s\n", val, val, "********************");
     }
     printf("   +--------------------\n");
 }
 
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
