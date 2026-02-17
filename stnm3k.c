@@ -7,6 +7,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define RED "\x1B[31m"
+#define GRN "\x1B[32m"
+#define YEL "\x1B[33m"
+#define BOLD "\x1B[1m"
+#define RESET "\x1B[0m"
+
 void log_event(const char *event) {
     // Ensure logs directory exists
     struct stat st = {0};
@@ -21,7 +27,7 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove newline
+        timestamp[24] = '\0'; // Optimized newline removal
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -30,33 +36,24 @@ void log_event(const char *event) {
 }
 
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
-    int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            printf("#");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    const char *c = (level > 70) ? RED : (level > 40) ? YEL : GRN;
+    const char *s = (level > 70) ? "CRITICAL" : (level > 40) ? "ELEVATED" : "SECURE";
+    int b = level / 5;
+    printf("SQUIRREL THREAT METER: %s%s%s [%s%.*s%s%.*s] %d%%\n", c, s, RESET, c, b, "####################", RESET, 20-b, "--------------------", level);
 }
 
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS:\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            printf("*");
-        }
-        printf("\n");
+        const char *c = (val > 15) ? RED : (val > 8) ? YEL : GRN;
+        printf("%2d |%s%.*s%s\n", val, c, val, "********************", RESET);
     }
     printf("   +--------------------\n");
 }
 
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -93,8 +90,7 @@ void engage_defenses() {
 
         if (threat_level > 70) {
             const char* threat = get_random_threat();
-            printf("\n!!! MAXIMUM ALERT MODE !!!\n");
-            printf("ALERT: %s\n", threat);
+            printf("\n" BOLD RED "!!! MAXIMUM ALERT MODE !!!" RESET "\n" RED "ALERT: %s" RESET "\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
@@ -120,13 +116,13 @@ int main() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf(RED "Incorrect prayer." RESET "\n");
             return 1;
         }
     }
 
     if (prayer_count == 3) {
-        printf("\nAuthentication successful. Welcome, Sentinel.\n");
+        printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
         printf("1. ENGAGE DEFENSES\n");
         printf("2. EXIT (COWARDLY)\n");
         printf("> ");
@@ -138,7 +134,7 @@ int main() {
             printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
         }
     } else {
-        printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+        printf(RED "Incorrect prayer." RESET "\n");
     }
 
     return 0;
