@@ -106,6 +106,7 @@ void engage_defenses() {
 }
 
 int main() {
+    umask(0077); // Set secure file permissions for all created logs
     srand(time(NULL));
 
     char command[100];
@@ -116,10 +117,13 @@ int main() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        command[strcspn(command, "\r\n")] = 0; // Strip trailing newline
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
+            log_event("Authentication step passed.");
         } else {
+            log_event("Authentication failure: Incorrect prayer.");
             printf("Incorrect prayer. The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 1;
         }
