@@ -24,6 +24,12 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 
+/* --- UI COLORS --- */
+#define RED "\x1B[31m"
+#define GRN "\x1B[32m"
+#define YEL "\x1B[33m"
+#define RESET "\x1B[0m"
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -67,18 +73,29 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
+    const char *color = GRN;
+    const char *status = "SECURE";
+
+    if (level > 85) {
+        color = RED;
+        status = "CRITICAL";
+    } else if (level > 70) {
+        color = YEL;
+        status = "CAUTION";
+    }
+
+    printf("SQUIRREL THREAT METER: %s[", color);
     int bars = level / 5;
     for (int i = 0; i < 20; i++) {
         if (i < bars) {
-            if (level > 80) printf("!");
-            else if (level > 50) printf("#");
+            if (level > 85) printf("!");
+            else if (level > 70) printf("#");
             else printf("=");
         } else {
             printf("-");
         }
     }
-    printf("] %d%%\n", level);
+    printf("] %d%% [%s]%s\n", level, status, RESET);
 }
 
 /**
@@ -143,9 +160,15 @@ void engage_defenses() {
         printf("\n");
         print_graph_of_chaos();
 
-        if (threat_level > 70) {
+        if (threat_level > 85) {
             const char* threat = get_random_threat();
-            printf("\n!!! MAXIMUM ALERT MODE !!!\n");
+            printf("\n%s!!! RED SQUIRREL ALERT !!!%s\n", RED, RESET);
+            printf("ALERT: %s\n", threat);
+            log_event(threat);
+            printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+        } else if (threat_level > 70) {
+            const char* threat = get_random_threat();
+            printf("\n%s!!! YELLOW ACORN ALERT !!!%s\n", YEL, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
@@ -175,13 +198,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%sINCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -195,7 +218,7 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
+    printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
