@@ -24,17 +24,31 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 
+/* --- TERMINAL COLORS --- */
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    static int initialized = 0;
+    if (initialized) return;
+
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+    initialized = 1;
 }
 
 /**
@@ -51,12 +65,17 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        timestamp[24] = '\0'; // Remove trailing newline
     } else {
         timestamp = "UNKNOWN TIME";
     }
 
-    fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    int cow_hr = rand() % 200 + 50;
+    int paranoia = rand() % 100;
+    int fort = rand() % 10;
+
+    fprintf(fp, "[%s] COCAINE-COW-LOG: %s {COW_HR:%dbpm, PARANOIA:%d%%, FORT:%d/10}\n",
+            timestamp, event, cow_hr, paranoia, fort);
     fclose(fp);
 }
 
@@ -67,34 +86,28 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            if (level > 80) printf("!");
-            else if (level > 50) printf("#");
-            else printf("=");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    const char *color = (level > 80) ? RED : (level > 50) ? YEL : GRN;
+    const char *status = (level > 80) ? "CRITICAL" : (level > 50) ? "CAUTION" : "SECURE";
+    const char *fill = (level > 80) ? "!!!!!!!!!!!!!!!!!!!!" :
+                       (level > 50) ? "####################" :
+                                      "====================";
+    printf("SQUIRREL THREAT METER: [%s%.*s%s%.*s] %d%% [%s%s%s]\n",
+           color, bars, fill, RESET, 20 - bars, "--------------------", level, color, status, RESET);
 }
 
 /**
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
-    printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    printf("%sGUI GRAPH OF CHAOS (Network Volatility):%s\n", CYN, RESET);
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *color = (val > 15) ? RED : (val > 8) ? YEL : GRN;
+        const char *fill = (val > 15) ? "XXXXXXXXXXXXXXXXXXXX" :
+                           (val > 8)  ? "********************" :
+                                        "....................";
+        printf("%2d |%s%.*s%s\n", val, color, val, fill, RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -105,7 +118,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -131,8 +144,8 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", MAG, VERSION, RESET);
+        printf("%sPLATFORM: %s%s\n\n", BLU, PLATFORM, RESET);
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -165,29 +178,40 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    log_event("AUTHENTICATION INITIATED");
+
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        command[strcspn(command, "\r\n")] = 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
+    log_event("AUTHENTICATION SUCCESSFUL");
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main entry point of the SQUIRREL TERMINATOR NETWORK MONITOR 3000.
+ * Initializes security settings and handles the top-level user interface.
+ * @return 0 on success, 1 on authentication failure.
+ */
 int main() {
+    umask(0077);
     init_system();
 
     if (!authenticate_user()) {
