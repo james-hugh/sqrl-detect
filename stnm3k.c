@@ -23,6 +23,13 @@
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
+#define METER_WIDTH 20
+
+/* ANSI Colors */
+#define RED "\x1B[31m"
+#define GRN "\x1B[32m"
+#define YEL "\x1B[33m"
+#define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -67,18 +74,22 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
-    int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            if (level > 80) printf("!");
-            else if (level > 50) printf("#");
-            else printf("=");
-        } else {
-            printf("-");
-        }
+    const char *color = GRN;
+    const char *status = "SECURE";
+    static const char bars_fill[] = "####################";
+    static const char bars_empty[] = "--------------------";
+
+    if (level > 85) {
+        color = RED;
+        status = "CRITICAL";
+    } else if (level > 70) {
+        color = YEL;
+        status = "CAUTION";
     }
-    printf("] %d%%\n", level);
+
+    int bars = (level * METER_WIDTH) / 100;
+    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+           color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
 /**
@@ -145,7 +156,10 @@ void engage_defenses() {
 
         if (threat_level > 70) {
             const char* threat = get_random_threat();
-            printf("\n!!! MAXIMUM ALERT MODE !!!\n");
+            const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
+            const char* alert_color = (threat_level > 85) ? RED : YEL;
+
+            printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
