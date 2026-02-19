@@ -51,7 +51,9 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        // Optimization: ctime returns exactly 26 chars including \n\0.
+        // Direct null-termination at index 24 is faster than strlen().
+        timestamp[24] = '\0';
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -67,34 +69,32 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
-    printf("SQUIRREL THREAT METER: [");
     int bars = level / 5;
-    for (int i = 0; i < 20; i++) {
-        if (i < bars) {
-            if (level > 80) printf("!");
-            else if (level > 50) printf("#");
-            else printf("=");
-        } else {
-            printf("-");
-        }
-    }
-    printf("] %d%%\n", level);
+    // Optimization: Use static template strings and %.*s to minimize printf calls.
+    static const char *excl = "!!!!!!!!!!!!!!!!!!!!";
+    static const char *hash = "####################";
+    static const char *equ  = "====================";
+    static const char *dash = "--------------------";
+
+    const char *fill = (level > 80) ? excl : (level > 50) ? hash : equ;
+
+    printf("SQUIRREL THREAT METER: [%.*s%.*s] %d%%\n", bars, fill, 20 - bars, dash, level);
 }
 
 /**
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char *exes = "XXXXXXXXXXXXXXXXXXXX";
+    static const char *stars = "********************";
+    static const char *dots  = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        // Optimization: Replace inner loop with %.*s precision specifier.
+        const char *fill = (val > 15) ? exes : (val > 8) ? stars : dots;
+        printf("%2d |%.*s\n", val, val, fill);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -105,7 +105,8 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    // Optimization: Mark as static to avoid re-initialization on every call.
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
