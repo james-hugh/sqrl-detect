@@ -165,6 +165,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    log_event("AUTHENTICATION INITIATED");
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -172,22 +173,27 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        command[strcspn(command, "\r\n")] = '\0'; // Strip trailing newline
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
+    umask(0077); // Ensure all process-created files are secure (owner-only)
     init_system();
 
     if (!authenticate_user()) {
@@ -200,7 +206,8 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    command[strcspn(command, "\r\n")] = '\0';
+    if (strcmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
