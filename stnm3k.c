@@ -195,7 +195,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
     return 1;
 }
 
@@ -209,9 +209,10 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("1. " GRN "ENGAGE DEFENSES" RESET "\n");
+    printf("2. " RED "EXIT (COWARDLY)" RESET "\n");
     printf("> ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
