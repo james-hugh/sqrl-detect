@@ -37,10 +37,12 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1) {
+            perror("Failed to create logs directory");
+        }
     }
 }
 
@@ -58,12 +60,18 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        timestamp[24] = '\0'; // Optimize newline removal
     } else {
         timestamp = "UNKNOWN TIME";
     }
 
-    fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    // Randomized thematic metadata
+    int cow_hr = rand() % 200;
+    int paranoia = rand() % 100;
+    int fort = rand() % 10;
+
+    fprintf(fp, "[%s] [COW_HR:%d] [PARANOIA:%d%%] [FORT:%d] COCAINE-COW-LOG: %s\n",
+            timestamp, cow_hr, paranoia, fort, event);
     fclose(fp);
 }
 
@@ -96,15 +104,17 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char template_x[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char template_star[] = "********************";
+    static const char template_dot[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, template_x);
+        else if (val > 8) printf("%.*s", val, template_star);
+        else printf("%.*s", val, template_dot);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -113,10 +123,49 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Displays the last 10 log entries from the holy scrolls.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The Holy Scrolls are empty or inaccessible.\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH (LAST 10 ENTRIES) ---\n");
+    char lines[10][256];
+    int count = 0;
+    while (fgets(lines[count % 10], 256, fp)) {
+        count++;
+    }
+    fclose(fp);
+
+    int start = (count > 10) ? (count % 10) : 0;
+    int limit = (count > 10) ? 10 : count;
+    for (int i = 0; i < limit; i++) {
+        printf("%s", lines[(start + i) % 10]);
+    }
+}
+
+/**
+ * Initiates the Polish Cow Synchronicity Protocol.
+ */
+void sync_cows() {
+    printf("Initiating Polish Cow Synchronicity Protocol...\n");
+    for (int i = 0; i < 3; i++) {
+        printf("MOO... ");
+        fflush(stdout);
+        usleep(500000);
+    }
+    printf("\nCows synchronized at 3 AM cocaine frequency.\n");
+    log_event("COW SYNCHRONICITY ACHIEVED.");
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -181,27 +230,33 @@ int authenticate_user() {
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
+    log_event("AUTHENTICATION INITIATED");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
+    umask(0077);
     init_system();
 
     if (!authenticate_user()) {
@@ -209,15 +264,29 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. " GRN "ENGAGE DEFENSES" RESET "\n");
+        printf("2. VIEW HOLY SCROLLS (LOGS)\n");
+        printf("3. SYNCHRONIZE WITH POLISH COWS (MOO)\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "1") == 0 || strcmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcmp(command, "2") == 0 || strcmp(command, "VIEW HOLY SCROLLS") == 0) {
+            view_logs();
+        } else if (strcmp(command, "3") == 0 || strcmp(command, "MOO") == 0) {
+            sync_cows();
+        } else if (strcmp(command, "4") == 0 || strcmp(command, "EXIT") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
