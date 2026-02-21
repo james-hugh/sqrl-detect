@@ -179,29 +179,34 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    log_event("AUTHENTICATION INITIATED");
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        command[strcspn(command, "\r\n")] = '\0';
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
+    printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
+    umask(0077);
     init_system();
 
     if (!authenticate_user()) {
@@ -213,8 +218,9 @@ int main() {
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    command[strcspn(command, "\r\n")] = '\0';
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
