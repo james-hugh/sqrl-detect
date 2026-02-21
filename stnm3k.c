@@ -97,15 +97,26 @@ void print_threat_meter(int level) {
  */
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    static const char bars_high[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char bars_med[]  = "********************";
+    static const char bars_low[]  = "....................";
+
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+
+        const char *color = GRN;
+        const char *template = bars_low;
+
+        if (val > 15) {
+            color = RED;
+            template = bars_high;
+        } else if (val > 8) {
+            color = YEL;
+            template = bars_med;
         }
-        printf("\n");
+
+        printf("%s%.*s%s\n", color, val, template, RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -184,6 +195,7 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
@@ -195,7 +207,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
     return 1;
 }
 
@@ -209,9 +221,11 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n--- MAIN COMMAND CENTER ---\n");
+    printf("1. " GRN "ENGAGE DEFENSES" RESET "\n");
+    printf("2. " RED "EXIT (COWARDLY)" RESET "\n");
     printf("> ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
