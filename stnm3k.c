@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -29,6 +30,7 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -41,6 +43,17 @@ void init_system() {
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
+    }
+}
+
+/**
+ * Normalizes input by removing trailing newline and space characters.
+ */
+void normalize_input(char* str) {
+    str[strcspn(str, "\r\n")] = 0;
+    int len = strlen(str);
+    while (len > 0 && str[len - 1] == ' ') {
+        str[--len] = '\0';
     }
 }
 
@@ -184,9 +197,11 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -209,15 +224,19 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s--- MAIN COMMAND CENTER ---%s\n", CYN, RESET);
+    printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    fflush(stdout);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
+
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("\nCowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
 
     return 0;
