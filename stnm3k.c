@@ -29,6 +29,7 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -101,9 +102,9 @@ void print_graph_of_chaos() {
         int val = rand() % 20;
         printf("%2d |", val);
         for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+            if (val > 15) printf("%sX%s", RED, RESET);
+            else if (val > 8) printf("%s*%s", YEL, RESET);
+            else printf("%s.%s", GRN, RESET);
         }
         printf("\n");
     }
@@ -184,18 +185,19 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%sINCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,9 +211,11 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s--- MAIN COMMAND CENTER ---%s\n", CYN, RESET);
+    printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
