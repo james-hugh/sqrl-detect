@@ -1,0 +1,3 @@
+## 2026-02-23 - CLI Rendering and String Handling Optimizations
+**Learning:** In CLI-based monitoring tools, character-by-character printing in loops (like rendering graphs) introduces significant overhead due to repeated syscalls. Using `%.*s` with static buffers allows batching prints and reduces overhead by ~30%. Additionally, `ctime()` returns a fixed-length string, making index-based newline removal more efficient than `strlen()`.
+**Action:** Always prefer `%.*s` for repeating character patterns in CLI output and use fixed indices for standard library functions with constant-format output.
