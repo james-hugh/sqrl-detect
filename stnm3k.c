@@ -12,11 +12,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+/* --- FUNCTION PROTOTYPES --- */
+void init_system(void);
+void log_event(const char *event);
+void print_threat_meter(int level);
+void print_graph_of_chaos(void);
+const char* get_random_threat(void);
+void engage_defenses(void);
+int authenticate_user(void);
+void normalize_input(char *str);
 
 /* --- CONFIGURATION MACROS --- */
 #define VERSION "0.69"
@@ -34,13 +45,29 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Normalizes user input by stripping trailing newlines and space characters.
+ * @param str The string to normalize.
+ */
+void normalize_input(char *str) {
+    str[strcspn(str, "\r\n")] = '\0';
+    int len = (int)strlen(str);
+    while (len > 0 && str[len - 1] == ' ') {
+        str[--len] = '\0';
+    }
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
-void init_system() {
-    srand(time(NULL));
+void init_system(void) {
+    umask(0077);
+    srand((unsigned int)time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1) {
+            perror("CRITICAL: Failed to create logs directory");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -185,8 +212,9 @@ int authenticate_user() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -213,8 +241,9 @@ int main() {
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
