@@ -58,7 +58,7 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        timestamp[24] = '\0'; // Remove trailing newline (fixed index for ctime)
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -96,16 +96,18 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char x_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_fill[] = "********************";
+    static const char dot_fill[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *fill = dot_fill;
+        if (val > 15) fill = x_fill;
+        else if (val > 8) fill = star_fill;
+
+        printf("%2d |%.*s\n", val, val, fill);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -116,7 +118,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
