@@ -29,6 +29,7 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -184,10 +185,14 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            if (prayer_count < 3) {
+                printf("%sPRAYER ACCEPTED. THE COWS NOD IN APPROVAL.%s\n", GRN, RESET);
+            }
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -195,7 +200,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,9 +214,11 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf("\n%s--- MAIN COMMAND CENTER ---%s\n", CYN, RESET);
+    printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. EXIT (COWARDLY)%s\n", RED, RESET);
+    printf("Command sentinel > ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
