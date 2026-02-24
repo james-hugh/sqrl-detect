@@ -1,0 +1,4 @@
+## 2026-02-24 - Weak Authentication Matching and Secure File Permissions
+**Vulnerability:** The authentication mechanism used `strstr()` to verify the "GLORY BE" prayer, allowing any input containing the phrase (e.g., "NOT GLORY BE") to pass. Additionally, log files were created with default system permissions, potentially exposing them to other users on the system.
+**Learning:** Substring matching for authentication tokens or passwords is a high-risk pattern that can lead to trivial bypasses. Relying on default `umask` for sensitive files (like logs) is an insecure practice; explicit permission control should be enforced at the process level.
+**Prevention:** Always use exact string matching (`strcmp`) for authentication identifiers after normalizing input. Implement `umask(0077)` during system initialization to ensure a "Defense in Depth" approach where all files created by the application are restricted to the owner by default.

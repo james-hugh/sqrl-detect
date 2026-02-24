@@ -34,13 +34,25 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Normalizes user input by removing trailing newlines and carriage returns.
+ * @param str The string to normalize.
+ */
+void normalize_input(char *str) {
+    str[strcspn(str, "\r\n")] = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1) {
+            perror("CRITICAL: Failed to create logs directory");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -185,8 +197,9 @@ int authenticate_user() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -213,8 +226,9 @@ int main() {
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcmp(command, "1") == 0 || strcmp(command, "ENGAGE DEFENSES") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
