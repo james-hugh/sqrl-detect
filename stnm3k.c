@@ -37,11 +37,15 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
-    srand(time(NULL));
+    static int initialized = 0;
+    if (initialized) return;
+
+    srand((unsigned int)time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+    initialized = 1;
 }
 
 /**
@@ -58,7 +62,7 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        timestamp[24] = '\0'; // Remove trailing newline (ctime is always 26 chars including \n and \0)
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -96,15 +100,17 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char fill_x[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char fill_star[] = "********************";
+    static const char fill_dot[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, fill_x);
+        else if (val > 8) printf("%.*s", val, fill_star);
+        else if (val > 0) printf("%.*s", val, fill_dot);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -116,7 +122,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
