@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -29,19 +30,65 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
+/* --- FUNCTION PROTOTYPES --- */
+void init_system();
+void log_event(const char *event);
+void print_threat_meter(int level);
+void print_graph_of_chaos();
+const char* get_random_threat();
+void engage_defenses();
+int authenticate_user();
+void normalize_input(char *str);
+void view_holy_scrolls();
+void synchronize_with_cows();
+void show_pillow_fort_status();
+
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Normalizes user input by removing leading/trailing whitespace and newlines.
+ * @param str The string to normalize.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    // Remove trailing newline and whitespace
+    size_t len = strlen(str);
+    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' || str[len - 1] == ' ')) {
+        str[--len] = '\0';
+    }
+
+    // Remove leading whitespace
+    size_t start = 0;
+    while (str[start] == ' ') {
+        start++;
+    }
+    if (start > 0) {
+        memmove(str, str + start, len - start + 1);
+    }
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
-    srand(time(NULL));
+    static int initialized = 0;
+    if (initialized) return;
+
+    umask(0077);
+    srand((unsigned int)time(NULL));
+
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) != 0) {
+            perror("CRITICAL: Failed to create log sanctuary");
+            exit(EXIT_FAILURE);
+        }
     }
+    initialized = 1;
 }
 
 /**
@@ -58,7 +105,7 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        timestamp[24] = '\0'; // Precise ctime optimization
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -96,14 +143,19 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char *bars = "XXXXXXXXXXXXXXXXXXXX********************....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
+        int val = rand() % 21;
+        if (val > 20) val = 20;
+
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+        if (val > 15) {
+            printf("%.*s", val, bars);
+        } else if (val > 8) {
+            printf("%.*s", val, bars + 20);
+        } else {
+            printf("%.*s", val, bars + 40);
         }
         printf("\n");
     }
@@ -116,7 +168,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -172,6 +224,80 @@ void engage_defenses() {
 }
 
 /**
+ * Displays the last 10 entries of the holy scrolls using a circular buffer.
+ */
+void view_holy_scrolls() {
+    printf("\n" CYN "--- VIEWING HOLY SCROLLS OF TRUTH ---" RESET "\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. No truth has been recorded yet.\n");
+        return;
+    }
+
+    char *lines[10];
+    for (int i = 0; i < 10; i++) lines[i] = NULL;
+    char buffer[256];
+    int count = 0;
+
+    while (fgets(buffer, sizeof(buffer), fp)) {
+        if (lines[count % 10]) free(lines[count % 10]);
+        lines[count % 10] = strdup(buffer);
+        count++;
+    }
+    fclose(fp);
+
+    int start = (count > 10) ? (count % 10) : 0;
+    int display_count = (count > 10) ? 10 : count;
+
+    for (int i = 0; i < display_count; i++) {
+        printf("%s", lines[(start + i) % 10]);
+        free(lines[(start + i) % 10]);
+    }
+
+    printf("\nPress Enter to return to the command center...");
+    fflush(stdout);
+    getchar();
+}
+
+/**
+ * Performs a high-speed synchronization with Polish cows.
+ */
+void synchronize_with_cows() {
+    printf("\n" CYN "--- SYNCHRONIZING WITH POLISH COWS ---" RESET "\n");
+    printf("Establishing MOO-level protocol...\n");
+
+    for (int i = 0; i <= 20; i++) {
+        printf("\r[");
+        for (int j = 0; j < 20; j++) {
+            if (j < i) printf("#");
+            else printf("-");
+        }
+        printf("] %d%% MOO", i * 5);
+        fflush(stdout);
+        usleep(100000); // 0.1s
+    }
+    printf("\n\nSync complete. The cows are now running laps at 3 AM.\n");
+    printf("Press Enter to return...");
+    fflush(stdout);
+    getchar();
+}
+
+/**
+ * Shows the current status of the pillow fort.
+ */
+void show_pillow_fort_status() {
+    printf("\n" CYN "--- PILLOW FORT STATUS ---" RESET "\n");
+    printf("Integrity:  [" GRN "####################" RESET "] 100%%\n");
+    printf("Cushioning: [" GRN "################" RESET "----] 80%%\n");
+    printf("Snack Supply: [" YEL "##########" RESET "----------] 50%%\n");
+    printf("Paranoia Level: [" RED "##################" RESET "--] 90%%\n");
+    printf("\nDefenses are holding. The Google Machine cannot find us here.\n");
+    printf("Press Enter to return...");
+    fflush(stdout);
+    getchar();
+}
+
+/**
  * Handles user authentication via the sacred prayer.
  * @return 1 if authenticated, 0 otherwise.
  */
@@ -181,21 +307,26 @@ int authenticate_user() {
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
+    log_event("AUTHENTICATION INITIATED");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
     return 1;
 }
 
@@ -209,15 +340,33 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n" CYN "--- MAIN COMMAND CENTER ---" RESET "\n");
+        printf(GRN "1. ENGAGE DEFENSES" RESET "\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. SYNCHRONIZE WITH COWS\n");
+        printf("4. PILLOW FORT STATUS\n");
+        printf(RED "5. EXIT (COWARDLY)" RESET "\n");
+        printf("> ");
+        fflush(stdout);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        normalize_input(command);
+
+        if (strcasecmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "2") == 0 || strcasecmp(command, "VIEW HOLY SCROLLS") == 0) {
+            view_holy_scrolls();
+        } else if (strcasecmp(command, "3") == 0 || strcasecmp(command, "SYNCHRONIZE WITH COWS") == 0) {
+            synchronize_with_cows();
+        } else if (strcasecmp(command, "4") == 0 || strcasecmp(command, "PILLOW FORT STATUS") == 0) {
+            show_pillow_fort_status();
+        } else if (strcasecmp(command, "5") == 0 || strcasecmp(command, "EXIT") == 0 || strcasecmp(command, "EXIT (COWARDLY)") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown directive. The Google Machine is trying to confuse you.\n");
+        }
     }
 
     return 0;
