@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <strings.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,6 +30,7 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -42,6 +44,17 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Normalizes input by removing newlines and leading/trailing whitespace.
+ */
+void normalize_input(char *str) {
+    str[strcspn(str, "\r\n")] = 0;
+    while (strlen(str) > 0 && str[strlen(str) - 1] == ' ') str[strlen(str) - 1] = 0;
+    char *src = str;
+    while (*src == ' ') src++;
+    if (src != str) memmove(str, src, strlen(src) + 1);
 }
 
 /**
@@ -96,16 +109,20 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
-    printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    printf(CYN "GUI GRAPH OF CHAOS (Network Volatility):\n" RESET);
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%2d | %s", val, color);
         for (int j = 0; j < val; j++) {
             if (val > 15) printf("X");
             else if (val > 8) printf("*");
             else printf(".");
         }
-        printf("\n");
+        printf(RESET "\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -165,7 +182,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\n" CYN "Monitoring..." RESET " (Ctrl+C to retreat to your pillow fort)\n");
         fflush(stdout);
         sleep(1);
     }
@@ -179,23 +196,25 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf(CYN "🖥️  STNM3K v%s INITIALIZED\n" RESET, VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf(RED "\nINCORRECT PRAYER.\n" RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf(GRN "\nAuthentication successful. Welcome, Sentinel.\n" RESET);
     return 1;
 }
 
@@ -209,15 +228,18 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf(CYN "\n--- MAIN COMMAND CENTER ---\n" RESET);
+    printf(GRN "1. ENGAGE DEFENSES\n" RESET);
+    printf(RED "2. EXIT (COWARDLY)\n" RESET);
     printf("> ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf(RED "Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n" RESET);
     }
 
     return 0;
