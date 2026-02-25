@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,9 +36,27 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Strips leading/trailing whitespace and newlines from a string.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+    str[strcspn(str, "\r\n")] = 0;
+    char *start = str;
+    while (isspace((unsigned char)*start)) start++;
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+    int len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = 0;
+    }
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -179,22 +199,27 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    log_event("AUTHENTICATION INITIATED");
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
+    log_event("AUTHENTICATION SUCCESSFUL");
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
     return 1;
 }
@@ -212,9 +237,11 @@ int main() {
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
+    fflush(stdout);
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
