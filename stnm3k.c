@@ -58,7 +58,8 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        /* ctime() returns a fixed-length string of 26 characters (including \n and \0) */
+        timestamp[24] = '\0';
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -96,15 +97,18 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char x_line[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char s_line[] = "********************";
+    static const char d_line[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        /* Optimized to use single printf call per line with precision specifiers */
+        if (val > 15) printf("%.*s", val, x_line);
+        else if (val > 8) printf("%.*s", val, s_line);
+        else printf("%.*s", val, d_line);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -116,7 +120,8 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    /* Using static const to avoid redundant initialization on every call */
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
