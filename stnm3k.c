@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
+#include <strings.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +33,12 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL STATE --- */
+volatile sig_atomic_t keep_running_defenses = 1;
+
+/* --- FUNCTION PROTOTYPES --- */
+void handle_sigint(int sig);
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -42,6 +50,15 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Signal handler for SIGINT (Ctrl+C).
+ * Allows graceful exit from the monitoring loop.
+ */
+void handle_sigint(int sig) {
+    (void)sig; // Suppress unused parameter warning
+    keep_running_defenses = 0;
 }
 
 /**
@@ -137,8 +154,12 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    // Setup signal handler for graceful exit
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +190,11 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    // Restore default signal handler
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- RETREATING TO PILLOW FORT ---\n");
+    log_event("DEFENSES DISENGAGED. RETREATING TO PILLOW FORT.");
 }
 
 /**
@@ -209,15 +235,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int keep_running_menu = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (keep_running_menu) {
+        printf("\n--- MAIN COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("> ");
+        fflush(stdout);
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || strcasecmp(command, "ENGAGE DEFENSES\n") == 0) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strcasecmp(command, "EXIT\n") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            keep_running_menu = 0;
+        } else {
+            printf("Invalid command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
