@@ -14,6 +14,9 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
+#include <ctype.h>
+#include <strings.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,9 +32,50 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL STATE --- */
+volatile sig_atomic_t keep_running_defenses = 1;
+
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Signal handler for SIGINT to gracefully exit the monitoring loop.
+ */
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running_defenses = 0;
+}
+
+/**
+ * Strips leading/trailing whitespace and newlines from a string.
+ */
+void normalize_input(char *str) {
+    if (!str || *str == '\0') return;
+    char *start = str;
+    char *end;
+
+    // Trim leading space
+    while(isspace((unsigned char)*start)) start++;
+
+    if(*start == 0) {
+        *str = '\0';
+        return;
+    }
+
+    // Trim trailing space
+    end = start + strlen(start) - 1;
+    while(end > start && isspace((unsigned char)*end)) end--;
+
+    // Write new null terminator character
+    end[1] = '\0';
+
+    // Shift back if needed
+    if (start != str) {
+        memmove(str, start, end - start + 2);
+    }
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -137,8 +181,11 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +216,11 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- DEFENSES DISENGAGED. RETREATING TO PILLOW FORT. ---\n");
+    log_event("DEFENSES DISENGAGED. RETREATED TO PILLOW FORT.");
+    sleep(1);
 }
 
 /**
@@ -209,15 +261,23 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s--- STNM3K COMMAND CENTER ---%s\n", CYN, RESET);
+        printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        normalize_input(command);
+
+        if (strcasecmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "2") == 0 || strcasecmp(command, "EXIT") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
