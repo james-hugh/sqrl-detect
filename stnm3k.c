@@ -12,8 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,10 +28,22 @@
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
 
+/* Global signal state */
+volatile sig_atomic_t keep_running_defenses = 1;
+
+/**
+ * Signal handler to gracefully stop the monitoring loop.
+ */
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running_defenses = 0;
+}
+
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -41,6 +56,30 @@ void init_system() {
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
+    }
+}
+
+/**
+ * Normalizes input by trimming leading/trailing whitespace and newlines.
+ * @param str The string to normalize.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    // Trim trailing whitespace and newlines
+    size_t len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = '\0';
+    }
+
+    // Trim leading whitespace
+    size_t start = 0;
+    while (str[start] != '\0' && isspace((unsigned char)str[start])) {
+        start++;
+    }
+
+    if (start > 0) {
+        memmove(str, str + start, len - start + 1);
     }
 }
 
@@ -65,6 +104,41 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Runs a satirical system diagnostic check.
+ */
+void run_diagnostics() {
+    printf("\n--- RUNNING SYSTEM DIAGNOSTICS ---\n");
+    log_event("DIAGNOSTICS INITIATED.");
+
+    const char* checks[] = {
+        "Pillow Fort Integrity",
+        "Polish Cow Caffeine Levels",
+        "WiFi Acorn Decryption Buffer",
+        "Holy Scroll Synchronization",
+        "Mushroom Network Connectivity",
+        "Google Machine Stealth Shield"
+    };
+
+    for (int i = 0; i < 6; i++) {
+        printf("Checking %-30s... ", checks[i]);
+        fflush(stdout);
+        usleep(300000); // 0.3s delay for "processing"
+
+        int result = rand() % 100;
+        if (result > 90) {
+            printf("%s[FAILED]%s\n", RED, RESET);
+        } else if (result > 70) {
+            printf("%s[DEGRADED]%s\n", YEL, RESET);
+        } else {
+            printf("%s[OPTIMAL]%s\n", GRN, RESET);
+        }
+    }
+
+    printf("\n%sDIAGNOSTIC COMPLETE: %sThe Polish cows are mostly satisfied.%s\n", CYN, GRN, RESET);
+    log_event("DIAGNOSTICS COMPLETE. COWS ARE SATISFIED.");
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -137,8 +211,11 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    signal(SIGINT, handle_sigint);
+    keep_running_defenses = 1;
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +246,11 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- RETREATING TO PILLOW FORT ---\n");
+    log_event("DEFENSES DISENGAGED. RETREATED TO PILLOW FORT.");
+    sleep(1);
 }
 
 /**
@@ -209,15 +291,26 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- STNM3K COMMAND CENTER ---\n");
+        printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. SYSTEM DIAGNOSTICS%s\n", CYN, RESET);
+        printf("%s3. EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        normalize_input(command);
+
+        if (strcasecmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "2") == 0 || strcasecmp(command, "SYSTEM DIAGNOSTICS") == 0) {
+            run_diagnostics();
+        } else if (strcasecmp(command, "3") == 0 || strcasecmp(command, "EXIT") == 0 || strcasecmp(command, "QUIT") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else if (strlen(command) > 0) {
+            printf("UNKNOWN COMMAND: \"%s\". The Polish cows stare at you in confusion.\n", command);
+        }
     }
 
     return 0;
