@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,6 +39,7 @@
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077); // Ensure restrictive permissions for all created files
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
@@ -172,6 +174,30 @@ void engage_defenses() {
 }
 
 /**
+ * Normalizes user input by removing leading and trailing whitespace.
+ * @param str The string to normalize in-place.
+ */
+void normalize_input(char *str) {
+    if (!str || *str == '\0') return;
+
+    char *start = str;
+    char *end;
+
+    // Trim leading space
+    while (isspace((unsigned char)*start)) start++;
+
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+
+    // Trim trailing space
+    if (*str == '\0') return;
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+    end[1] = '\0';
+}
+
+/**
  * Handles user authentication via the sacred prayer.
  * @return 1 if authenticated, 0 otherwise.
  */
@@ -181,21 +207,28 @@ int authenticate_user() {
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
+    log_event("AUTHENTICATION INITIATED");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            log_event("AUTHENTICATION FAILED: EOF");
+            return 0;
+        }
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
     return 1;
 }
 
