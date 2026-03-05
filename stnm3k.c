@@ -12,11 +12,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+/* --- GLOBAL STATE --- */
+volatile sig_atomic_t keep_running_defenses = 1;
 
 /* --- CONFIGURATION MACROS --- */
 #define VERSION "0.69"
@@ -34,9 +40,42 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Handles SIGINT to gracefully stop defenses.
+ */
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running_defenses = 0;
+}
+
+/**
+ * Sanitizes input by removing leading/trailing whitespace and newlines.
+ */
+void normalize_input(char *str) {
+    if (!str) return;
+
+    // Trim trailing whitespace
+    char *end = str + strlen(str) - 1;
+    while (end >= str && isspace((unsigned char)*end)) {
+        *end = '\0';
+        end--;
+    }
+
+    // Trim leading whitespace
+    char *start = str;
+    while (*start && isspace((unsigned char)*start)) {
+        start++;
+    }
+
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -137,8 +176,11 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +211,33 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    signal(SIGINT, SIG_DFL);
+    printf("\nRetreating to pillow fort... Defenses suspended.\n");
+}
+
+/**
+ * Displays the holy scrolls of truth (logs).
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. No squirrel sins recorded yet.\n");
+        return;
+    }
+
+    printf("\n--- CONSULTING THE HOLY SCROLLS ---\n");
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+        count++;
+    }
+    if (count == 0) {
+        printf("The scrolls are blank. The squirrels are being unusually quiet...\n");
+    }
+    printf("--- END OF SCROLLS ---\n\n");
+    fclose(fp);
 }
 
 /**
@@ -181,21 +250,26 @@ int authenticate_user() {
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
+    log_event("AUTHENTICATION INITIATED");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER");
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL");
     return 1;
 }
 
@@ -209,15 +283,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (running) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. CONSULT THE HOLY SCROLLS\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        normalize_input(command);
+
+        if (strcmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcmp(command, "2") == 0 || strcasecmp(command, "CONSULT THE HOLY SCROLLS") == 0) {
+            view_logs();
+        } else if (strcmp(command, "3") == 0 || strcasecmp(command, "EXIT") == 0 || strcasecmp(command, "3. EXIT (COWARDLY)") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
