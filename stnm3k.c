@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -65,6 +67,28 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Normalizes user input by trimming leading/trailing whitespace and newlines.
+ * @param str The string to normalize in-place.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    size_t len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = '\0';
+    }
+
+    size_t start = 0;
+    while (str[start] != '\0' && isspace((unsigned char)str[start])) {
+        start++;
+    }
+
+    if (start > 0) {
+        memmove(str, str + start, len - start + 1);
+    }
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -185,8 +209,9 @@ int authenticate_user() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -213,8 +238,9 @@ int main() {
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcasecmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
