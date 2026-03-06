@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
  * Version: 0.69
@@ -12,8 +13,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,7 +35,24 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* Global flag for signal handling */
+volatile sig_atomic_t keep_running_defenses = 1;
+
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Normalizes input by trimming leading/trailing whitespace and newlines.
+ */
+void normalize_input(char *s) {
+    if (!s || !*s) return;
+    char *p = s + strlen(s) - 1;
+    while (p >= s && isspace((unsigned char)*p)) *p-- = '\0';
+    p = s;
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (p != s) memmove(s, p, strlen(p) + 1);
+}
+
+void handle_sigint(int sig) { (void)sig; keep_running_defenses = 0; }
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -137,8 +158,11 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +193,10 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    // Restore default signal handler
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- RETREATING TO PILLOW FORT ---\n");
 }
 
 /**
@@ -186,7 +214,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -195,7 +225,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n✅ Authentication successful. Welcome, Sentinel.\n");
     return 1;
 }
 
@@ -209,15 +239,23 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        normalize_input(command);
+
+        if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "EXIT") == 0 || strcmp(command, "2") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid command, Sentinel. Focus!\n");
+        }
     }
 
     return 0;
