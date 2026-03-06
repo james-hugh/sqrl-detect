@@ -1,6 +1,6 @@
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
- * Version: 0.69
+ * Version: 0.70
  * Platform: WINDOWS ME ONLY (GLORY BE)
  *
  * "Watching your network with the vigilance of Polish cows on 3 AM cocaine laps."
@@ -12,18 +12,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+
+/* Global state for signal handling */
+volatile sig_atomic_t keep_running_defenses = 1;
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -42,6 +48,38 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Strips leading and trailing whitespace from a string.
+ */
+void normalize_input(char *str) {
+    if (!str) return;
+
+    // Trim trailing whitespace
+    char *end = str + strlen(str) - 1;
+    while (end >= str && isspace((unsigned char)*end)) {
+        *end = '\0';
+        end--;
+    }
+
+    // Trim leading whitespace
+    char *start = str;
+    while (*start && isspace((unsigned char)*start)) {
+        start++;
+    }
+
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+}
+
+/**
+ * Signal handler for SIGINT to gracefully exit monitoring.
+ */
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running_defenses = 0;
 }
 
 /**
@@ -110,6 +148,54 @@ void print_graph_of_chaos() {
     printf("   +-------------------- (Acorns/sec)\n");
 }
 
+/**
+ * Displays the pillow fort integrity status with ASCII art.
+ */
+void check_pillow_fort() {
+    printf("\n--- PILLOW FORT INTEGRITY CHECK ---\n");
+    printf("      _..._      \n");
+    printf("    .'     '.    \n");
+    printf("   /  _   _  \\   \n");
+    printf("   | (o) (o) |   \n");
+    printf("   |    _    |   \n");
+    printf("    \\  '='  /    \n");
+    printf("     '._ _.'     \n");
+    printf("        |        \n");
+    printf("      --+--      \n");
+
+    int integrity = 50 + (rand() % 51); // 50-100%
+    printf("\nSTRUCTURAL INTEGRITY: %d%%\n", integrity);
+
+    if (integrity > 90) {
+        printf("STATUS: %sIMPERVIOUSELY COZY%s\n", GRN, RESET);
+    } else if (integrity > 70) {
+        printf("STATUS: %sSTABLE BUT PLIABLE%s\n", YEL, RESET);
+    } else {
+        printf("STATUS: %sCRITICAL FLUFFINESS LOSS%s\n", RED, RESET);
+        printf("WARNING: Re-stack the cushions immediately!\n");
+    }
+    printf("----------------------------------\n");
+}
+
+/**
+ * Displays the contents of the holy scrolls.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. Perhaps the squirrels ate them?\n");
+        return;
+    }
+
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+}
+
 /* --- CORE ENGINE LOGIC --- */
 
 /**
@@ -137,8 +223,12 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    // Setup signal handler for graceful exit
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +259,11 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    // Restore default signal handling
+    signal(SIGINT, SIG_DFL);
+    printf("\n\n--- RETREATING TO PILLOW FORT ---\n");
+    log_event("DEFENSES DISENGAGED. RETREATING TO PILLOW FORT.");
 }
 
 /**
@@ -181,21 +276,25 @@ int authenticate_user() {
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
+    log_event("AUTHENTICATION INITIATED.");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            log_event("AUTHENTICATION FAILED: INCORRECT PRAYER.");
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL.");
     return 1;
 }
 
@@ -209,15 +308,31 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int keep_running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (keep_running) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS (LOGS)\n");
+        printf("3. CHECK PILLOW FORT INTEGRITY\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        normalize_input(command);
+
+        if (strcasecmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "2") == 0 || strcasecmp(command, "VIEW HOLY SCROLLS") == 0) {
+            view_logs();
+        } else if (strcasecmp(command, "3") == 0 || strcasecmp(command, "CHECK PILLOW FORT") == 0) {
+            check_pillow_fort();
+        } else if (strcasecmp(command, "4") == 0 || strcasecmp(command, "EXIT") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            keep_running = 0;
+        } else {
+            printf("The Polish cows stare in confusion at your nonsense. Try again.\n");
+        }
     }
 
     return 0;
