@@ -12,8 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,6 +33,20 @@
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+
+/* --- GLOBAL STATE & UTILITIES --- */
+volatile sig_atomic_t keep_running_defenses = 1;
+
+void handle_sigint(int s) { (void)s; keep_running_defenses = 0; }
+
+void normalize_input(char *s) {
+    if (!s) return;
+    int len = strlen(s);
+    while (len > 0 && isspace((unsigned char)s[len - 1])) s[--len] = '\0';
+    char *p = s;
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (p != s) memmove(s, p, strlen(p) + 1);
+}
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -133,12 +150,14 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
+    signal(SIGINT, handle_sigint);
+    keep_running_defenses = 1;
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +188,8 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+    signal(SIGINT, SIG_DFL);
+    printf("\n\n--- RETREATING TO PILLOW FORT ---\n");
 }
 
 /**
@@ -185,11 +206,11 @@ int authenticate_user() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
-
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\nINCORRECT PRAYER (expected \"GLORY BE\").\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
@@ -203,22 +224,27 @@ int authenticate_user() {
 
 int main() {
     init_system();
-
-    if (!authenticate_user()) {
-        return 1;
-    }
+    if (!authenticate_user()) return 1;
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN COMMAND CENTER ---\n");
+        printf("🛡️  1. ENGAGE DEFENSES\n");
+        printf("🏃 2. EXIT (COWARDLY)\n");
+        printf("\nSelect your action: ");
+        fflush(stdout);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        normalize_input(command);
+
+        if (strcasecmp(command, "1") == 0 || strcasecmp(command, "ENGAGE DEFENSES") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "2") == 0 || strcasecmp(command, "EXIT") == 0) {
+            printf("\nCowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else if (strlen(command) > 0) {
+            printf("\nUNKNOWN COMMAND. The Google Machine is confused.\n");
+        }
     }
-
     return 0;
 }
