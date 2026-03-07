@@ -12,8 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,12 +34,58 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL FLAGS --- */
+volatile sig_atomic_t keep_running_defenses = 1;
+
+/**
+ * Signal handler for SIGINT (Ctrl+C).
+ */
+void handle_sigint(int sig) {
+    (void)sig;
+    keep_running_defenses = 0;
+}
+
+/* --- FORWARD DECLARATIONS --- */
+void init_system();
+void log_event(const char *event);
+void print_threat_meter(int level);
+void print_graph_of_chaos();
+const char* get_random_threat();
+void engage_defenses();
+int authenticate_user();
+void normalize_input(char *str);
+
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Normalizes input by stripping leading/trailing whitespace and newlines.
+ * @param str The string to normalize.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    // Remove trailing whitespace/newlines
+    int len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = '\0';
+    }
+
+    // Remove leading whitespace
+    int start = 0;
+    while (str[start] && isspace((unsigned char)str[start])) {
+        start++;
+    }
+
+    if (start > 0) {
+        memmove(str, str + start, len - start + 1);
+    }
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077); // Ensure logs and artifacts are only accessible by the owner
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -96,14 +145,20 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char bars_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char bars_mid[]  = "********************";
+    static const char bars_low[]  = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+        if (val > 15) {
+            printf("%.*s", val, bars_fill);
+        } else if (val > 8) {
+            printf("%.*s", val, bars_mid);
+        } else {
+            printf("%.*s", val, bars_low);
         }
         printf("\n");
     }
@@ -116,7 +171,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -133,12 +188,15 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -169,6 +227,10 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- RETREATING TO PILLOW FORT ---\n");
+    log_event("DEFENSES DISENGAGED. RETREATED TO PILLOW FORT.");
 }
 
 /**
@@ -179,14 +241,23 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    printf("\n");
+    printf("  _____ _______ _   _ __  __ ____  _  __\n");
+    printf(" / ____|__   __| \\ | |  \\/  |___ \\| |/ /\n");
+    printf("| (___    | |  |  \\| | \\  / | ___) | ' / \n");
+    printf(" \\___ \\   | |  | . ` | |\\/| ||__ <|  <  \n");
+    printf(" ____) |  | |  | |\\  | |  | |___) | . \\ \n");
+    printf("|_____/   |_|  |_| \\_|_|  |_|____/|_|\\_\\\n");
+    printf("\n");
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -196,6 +267,7 @@ int authenticate_user() {
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    log_event("AUTHENTICATION SUCCESSFUL. USER ENTERED THE PILLOW FORT.");
     return 1;
 }
 
@@ -205,19 +277,33 @@ int main() {
     init_system();
 
     if (!authenticate_user()) {
+        log_event("AUTHENTICATION FAILED. POSSIBLE SQUIRREL INTRUSION.");
         return 1;
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (running) {
+        printf("\n--- %sMAIN MENU%s ---\n", YEL, RESET);
+        printf("1. %sENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("2. %sEXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            printf("\n");
+            break;
+        }
+        normalize_input(command);
+
+        if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcasecmp(command, "1") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "EXIT") == 0 || strcasecmp(command, "2") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("UNKNOWN COMMAND. The Google Machine is confused.\n");
+        }
     }
 
     return 0;
