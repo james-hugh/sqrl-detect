@@ -12,8 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,7 +34,45 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* Global Flags */
+volatile sig_atomic_t cow_sync_active = 0;
+volatile sig_atomic_t keep_running_defenses = 1;
+
+/* --- SIGNAL HANDLING --- */
+
+/**
+ * Handles SIGINT to allow a graceful retreat to the main menu.
+ */
+void handle_sigint(int sig) {
+    (void)sig; // Unused
+    keep_running_defenses = 0;
+}
+
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Strips leading and trailing whitespace from a string.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    // Trim trailing whitespace
+    char *end = str + strlen(str) - 1;
+    while (end >= str && isspace((unsigned char)*end)) {
+        *end = '\0';
+        end--;
+    }
+
+    // Trim leading whitespace
+    char *start = str;
+    while (*start && isspace((unsigned char)*start)) {
+        start++;
+    }
+
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -63,8 +104,37 @@ void log_event(const char *event) {
         timestamp = "UNKNOWN TIME";
     }
 
-    fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    if (cow_sync_active) {
+        fprintf(fp, "[%s] [COW-SYNC: ACTIVE] COCAINE-COW-LOG: %s\n", timestamp, event);
+    } else {
+        fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    }
     fclose(fp);
+}
+
+/**
+ * Displays the contents of the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. The squirrels haven't made their move... yet.\n");
+        return;
+    }
+
+    char line[256];
+    int lines_found = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+        lines_found++;
+    }
+    fclose(fp);
+
+    if (lines_found == 0) {
+        printf("The scrolls are blank. A clean slate for a paranoid mind.\n");
+    }
+    printf("--- END OF SCROLLS ---\n");
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -137,13 +207,23 @@ void engage_defenses() {
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    // Setup signal handling for graceful retreat
+    keep_running_defenses = 1;
+    signal(SIGINT, handle_sigint);
+
     int threat_level = 10;
-    while (1) {
+    while (keep_running_defenses) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        if (cow_sync_active) {
+            printf("COW SYNC: " GRN "ACTIVE (Telemetry streaming from Polish herds)" RESET "\n");
+        } else {
+            printf("COW SYNC: " RED "INACTIVE (Disconnected from the herd)" RESET "\n");
+        }
+        printf("\n");
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -169,6 +249,11 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+
+    // Restore default signal handling before returning to menu
+    signal(SIGINT, SIG_DFL);
+    printf("\n--- RETREATING TO PILLOW FORT ---\n");
+    sleep(1);
 }
 
 /**
@@ -186,7 +271,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -209,15 +296,30 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. TOGGLE COW SYNC (%s)\n", cow_sync_active ? "ACTIVE" : "INACTIVE");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        normalize_input(command);
+
+        if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
+            engage_defenses();
+        } else if (strcasecmp(command, "VIEW HOLY SCROLLS") == 0 || strcmp(command, "2") == 0) {
+            view_holy_scrolls();
+        } else if (strcasecmp(command, "TOGGLE COW SYNC") == 0 || strcmp(command, "3") == 0) {
+            cow_sync_active = !cow_sync_active;
+            printf("Cow Synchronization is now %s.\n", cow_sync_active ? "ACTIVE" : "INACTIVE");
+        } else if (strcasecmp(command, "EXIT") == 0 || strcmp(command, "4") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows look at you with confusion.\n");
+        }
     }
 
     return 0;
