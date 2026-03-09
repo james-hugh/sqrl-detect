@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,9 +36,34 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Normalizes input by trimming leading/trailing whitespace and newlines in-place.
+ */
+void normalize_input(char *str) {
+    if (!str) return;
+
+    // Trim trailing whitespace and newlines
+    char *end = str + strlen(str) - 1;
+    while (end >= str && isspace((unsigned char)*end)) {
+        *end = '\0';
+        end--;
+    }
+
+    // Trim leading whitespace
+    char *start = str;
+    while (*start && isspace((unsigned char)*start)) {
+        start++;
+    }
+
+    if (start != str) {
+        memmove(str, start, strlen(start) + 1);
+    }
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -185,8 +212,9 @@ int authenticate_user() {
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        normalize_input(command);
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -213,8 +241,9 @@ int main() {
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    normalize_input(command);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcasecmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
