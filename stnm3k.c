@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -25,6 +27,9 @@
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
 
+/* --- FORWARD DECLARATIONS --- */
+void normalize_input(char *str);
+
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
@@ -32,6 +37,29 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Strips leading/trailing whitespace and newlines from a string.
+ */
+void normalize_input(char *str) {
+    if (str == NULL) return;
+
+    // Remove trailing whitespace and newlines
+    size_t len = strlen(str);
+    while (len > 0 && isspace((unsigned char)str[len - 1])) {
+        str[--len] = '\0';
+    }
+
+    // Remove leading whitespace
+    size_t start = 0;
+    while (str[start] != '\0' && isspace((unsigned char)str[start])) {
+        start++;
+    }
+
+    if (start > 0) {
+        memmove(str, str + start, len - start + 1);
+    }
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -186,7 +214,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        normalize_input(command);
+
+        if (strcasecmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -214,7 +244,9 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    normalize_input(command);
+
+    if (strcasecmp(command, "ENGAGE DEFENSES") == 0 || strcmp(command, "1") == 0) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
