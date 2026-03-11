@@ -142,7 +142,7 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf(YEL "🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n" RESET, VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
@@ -179,7 +179,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf(YEL "🖥️  STNM3K v%s INITIALIZED\n" RESET, VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
@@ -195,7 +195,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf(GRN "\nAuthentication successful. Welcome, Sentinel.\n" RESET);
     return 1;
 }
 
@@ -209,8 +209,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf(YEL "SELECT ACTION:\n" RESET);
+    printf(GRN "1. 🕹️  ENGAGE DEFENSES\n" RESET);
+    printf(RED "2. 💀 EXIT (COWARDLY)\n" RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
