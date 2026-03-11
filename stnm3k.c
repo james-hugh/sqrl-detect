@@ -37,11 +37,12 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    /* Enforce restricted file permissions (rwx------) for all created files/dirs */
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
-    }
+
+    /* Attempt to create the log directory; ignore error if it already exists */
+    mkdir(LOG_DIR, 0700);
 }
 
 /**
