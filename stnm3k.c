@@ -199,6 +199,25 @@ int authenticate_user() {
     return 1;
 }
 
+/**
+ * Displays the holy scrolls of truth (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n[ERROR] The holy scrolls are missing! The squirrels must have stolen them.\n");
+        return;
+    }
+
+    printf("\n--- 📜 THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n\n");
+    fclose(fp);
+}
+
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
@@ -209,15 +228,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
+    while (running) {
+        printf("\n%s--- MAIN COMMAND CENTER ---%s\n", YEL, RESET);
+        printf("%s[1] 🛡️  ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s[2] 📜 VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s[3] 🏃 EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") || strstr(command, "ENGAGE DEFENSES")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "VIEW HOLY SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won.\n");
+            running = 0;
+        } else {
+            printf("Invalid command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
