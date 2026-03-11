@@ -209,8 +209,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s--- COMMAND CENTER ---%s\n", YEL, RESET);
+    printf("%s[1] 🛡️  ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s[2] 🏃 EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
