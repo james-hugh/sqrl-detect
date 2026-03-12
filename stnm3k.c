@@ -133,7 +133,7 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
-    printf("\n--- ENGAGING DEFENSES ---\n");
+    printf("\n%s--- 🕹️  ENGAGING DEFENSES ---%s\n", GRN, RESET);
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
@@ -189,13 +189,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[FAILURE] INCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS] Authentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,15 +209,16 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("%s--- 🖥️  MAIN MENU ---%s\n", YEL, RESET);
+    printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("%sCowardice detected. The squirrels have already won. Your pillow fort is compromised.%s\n", RED, RESET);
     }
 
     return 0;
