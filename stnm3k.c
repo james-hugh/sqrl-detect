@@ -24,6 +24,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -38,10 +39,8 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
-    }
+    umask(0077);
+    mkdir(LOG_DIR, 0700);
 }
 
 /**
@@ -64,6 +63,25 @@ void log_event(const char *event) {
     }
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    fclose(fp);
+}
+
+/**
+ * Reads and displays the contents of the holy scrolls (log file).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or yet to be written. The Polish cows wait.\n");
+        return;
+    }
+
+    char line[256];
+    printf("\n%s--- HOLY SCROLLS OF TRUTH ---%s\n", YEL, RESET);
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("%s------------------------------%s\n", YEL, RESET);
     fclose(fp);
 }
 
@@ -140,7 +158,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -179,23 +197,23 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf("%s🛡️  STNM3K v%s INITIALIZED%s\n", YEL, VERSION, RESET);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
-        printf("(%d/3) > ", prayer_count + 1);
+        printf("%s(%d/3) > %s", GRN, prayer_count + 1, RESET);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%sINCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,15 +227,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s--- SENTINEL COMMAND CENTER ---%s\n", YEL, RESET);
+        printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. 📜 VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s3. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
