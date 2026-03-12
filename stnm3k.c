@@ -38,10 +38,8 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
-    }
+    umask(0077);
+    mkdir(LOG_DIR, 0700);
 }
 
 /**
@@ -172,6 +170,38 @@ void engage_defenses() {
 }
 
 /**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty. No squirrel treachery has been recorded yet.\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
+    fclose(fp);
+}
+
+/**
+ * Displays the current status of the pillow fort sentinels.
+ */
+void check_fort_status() {
+    printf("\n--- PILLOW FORT SENTINEL STATUS ---\n");
+    printf("🖥️  System: %s\n", PLATFORM);
+    printf("🏰 Walls: FLUFFY AND SECURE\n");
+    printf("🥛 Supplies: COCAINE-INFUSED MILK AT 90%% CAPACITY\n");
+    printf("🐄 Polish Cows: RUNNING LAPS IN SECTOR 3\n");
+    printf("🛡️  Defenses: SQUIRREL-PROOF ACORN PLATING ENGAGED\n");
+    printf("STATUS: ALL SYSTEMS GLORY BE.\n");
+}
+
+/**
  * Handles user authentication via the sacred prayer.
  * @return 1 if authenticated, 0 otherwise.
  */
@@ -209,15 +239,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s--- MAIN COMMAND MENU ---%s\n", YEL, RESET);
+        printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. 🖥️  VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s3. 🖥️  CHECK FORT STATUS%s\n", GRN, RESET);
+        printf("%s4. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE DEFENSES") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "VIEW HOLY SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "CHECK FORT STATUS") != NULL) {
+            check_fort_status();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
