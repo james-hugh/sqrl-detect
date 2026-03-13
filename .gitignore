@@ -1,0 +1,4 @@
+STNM3K
+tests/bench
+logs/
+*.o
