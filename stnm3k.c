@@ -30,6 +30,7 @@
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -140,7 +141,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -179,7 +180,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf(YEL "🖥️  STNM3K v%s INITIALIZED" RESET "\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
@@ -188,7 +189,9 @@ int authenticate_user() {
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf(GRN "[SUCCESS] Prayer accepted." RESET "\n");
         } else {
+            printf(RED "[FAILURE] Incorrect invocation." RESET "\n");
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
@@ -209,8 +212,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf(YEL "🖥️  STNM3K MAIN MENU" RESET "\n");
+    printf(GRN "1. 🕹️ ENGAGE DEFENSES" RESET "\n");
+    printf(RED "2. 💀 EXIT (COWARDLY)" RESET "\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
