@@ -24,6 +24,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -140,7 +141,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -187,10 +188,11 @@ int authenticate_user() {
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
+            printf("%s [SUCCESS]%s\n", GRN, RESET);
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
-            printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf("\n%s [FAILURE] INCORRECT PRAYER.%s\n", RED, RESET);
+            printf("%sThe Polish cows are disappointed and the Google Machine is laughing at you.%s\n", RED, RESET);
             return 0;
         }
     }
@@ -209,8 +211,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("%s--- MAIN MENU ---%s\n", YEL, RESET);
+    printf("%s1. 🕹️ ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
