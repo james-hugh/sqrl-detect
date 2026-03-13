@@ -24,6 +24,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -42,6 +43,22 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Displays the current status of the pillow fort.
+ */
+void check_fort_status() {
+    printf(CLEAR_SCREEN);
+    printf("--- PILLOW FORT STATUS REPORT ---\n\n");
+    printf("Platform:      %s\n", PLATFORM);
+    printf("Wall Security: MAXIMUM FLUFFINESS\n");
+    printf("Supply Level:  5mg COCAINE / COW / DAY\n");
+    printf("Current Mood:  PARANOID BUT COZY\n");
+
+    printf("\nPress Enter to return to the menu...");
+    char dummy[10];
+    fgets(dummy, sizeof(dummy), stdin);
 }
 
 /**
@@ -113,6 +130,29 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Displays the contents of the holy scrolls.
+ */
+void view_holy_scrolls() {
+    printf(CLEAR_SCREEN);
+    printf("--- HOLY SCROLLS OF TRUTH ---\n\n");
+
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. The squirrels are either silent or very sneaky.\n");
+    } else {
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+    }
+
+    printf("\nPress Enter to return to the menu...");
+    char dummy[10];
+    fgets(dummy, sizeof(dummy), stdin);
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
@@ -138,9 +178,9 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    for (int i = 0; i < 10; i++) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -165,7 +205,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (Auto-returning to menu in %d seconds)\n", 10 - i);
         fflush(stdout);
         sleep(1);
     }
@@ -209,15 +249,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(CLEAR_SCREEN);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 v%s%s\n\n", YEL, VERSION, RESET);
+        printf("%s1. 🕹️ ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. 🕹️ VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s3. 🕹️ CHECK FORT STATUS%s\n", GRN, RESET);
+        printf("%s4. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("\n> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE DEFENSES")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "VIEW HOLY SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") || strstr(command, "CHECK FORT STATUS")) {
+            check_fort_status();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
