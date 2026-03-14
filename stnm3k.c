@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,8 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +41,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create secure log directory");
     }
 }
 
@@ -93,6 +96,41 @@ void print_threat_meter(int level) {
 }
 
 /**
+ * Displays the current status of the Sentinel's pillow fort.
+ */
+void check_fort_status() {
+    printf(YEL "\n--- PILLOW FORT STATUS REPORT ---\n" RESET);
+    printf("Platform:      %s\n", PLATFORM);
+    printf("Wall Security: MAXIMUM FLUFFINESS\n");
+    printf("Supply Levels: 5mg Cocaine / 100 Acorns\n");
+    printf("Cow Readiness: RUNNING LAPS\n");
+
+    printf("\nPress Enter to return to command center...");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) { /* Ignore */ }
+}
+
+/**
+ * Reads and displays the Holy Scrolls (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf(RED "\nThe Holy Scrolls are missing! The squirrels must have stolen them.\n" RESET);
+    } else {
+        printf(YEL "\n--- THE HOLY SCROLLS OF TRUTH ---\n" RESET);
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+    }
+    printf("\nPress Enter to return to command center...");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) { /* Ignore */ }
+}
+
+/**
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
@@ -140,7 +178,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -188,8 +226,9 @@ int authenticate_user() {
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf(GRN "[SUCCESS] Prayer accepted.\n" RESET);
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf(RED "\n[FAILURE] INCORRECT PRAYER.\n" RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
@@ -209,15 +248,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(CLEAR_SCREEN);
+        printf(YEL "🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n" RESET, VERSION);
+        printf("1. 🕹️  ENGAGE DEFENSES\n");
+        printf("2. 🏰  CHECK PILLOW FORT STATUS\n");
+        printf("3. 📜  VIEW HOLY SCROLLS\n");
+        printf("4. 💀  EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "FORT")) {
+            check_fort_status();
+        } else if (strstr(command, "3") || strstr(command, "SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
