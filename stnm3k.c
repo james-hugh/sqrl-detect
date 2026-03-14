@@ -31,6 +31,8 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,6 +40,7 @@
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
@@ -139,8 +142,8 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        // Clear screen
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -172,6 +175,41 @@ void engage_defenses() {
 }
 
 /**
+ * Displays the thematic system status report for the pillow fort.
+ */
+void check_fort_status() {
+    printf("\n--- PILLOW FORT STATUS REPORT ---\n");
+    printf("Platform:      %s\n", PLATFORM);
+    printf("Wall Security: %sMAXIMUM FLUFFINESS%s\n", GRN, RESET);
+    printf("Supply Levels: 5mg Cocaine / 100 Acorns\n");
+    printf("Cow Vigilance: Laps in progress...\n");
+    printf("\nPress Enter to return to the command center...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Silence warning */ }
+}
+
+/**
+ * Reads and displays the holy scrolls (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n%s[ERROR]%s The holy scrolls are missing or illegible.\n", RED, RESET);
+    } else {
+        printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+        printf("--- END OF SCROLLS ---\n");
+    }
+    printf("\nPress Enter to return to the command center...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Silence warning */ }
+}
+
+/**
  * Handles user authentication via the sacred prayer.
  * @return 1 if authenticated, 0 otherwise.
  */
@@ -189,13 +227,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[FAILURE]%s INCORRECT PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
     return 1;
 }
 
@@ -209,15 +247,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(CLEAR_SCREEN);
+        printf("%s--- STNM3K MAIN COMMAND CENTER ---%s\n", YEL, RESET);
+        printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. 🏰  CHECK FORT STATUS%s\n", GRN, RESET);
+        printf("%s3. 📜  VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s4. 💀  EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "FORT")) {
+            check_fort_status();
+        } else if (strstr(command, "3") || strstr(command, "SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
