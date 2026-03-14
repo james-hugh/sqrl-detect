@@ -30,6 +30,7 @@
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -165,7 +166,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -195,7 +196,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s✅ Authentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,9 +210,11 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf(CLEAR_SCREEN);
+    printf("%s--- STNM3K MAIN MENU ---%s\n", YEL, RESET);
+    printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. 💀  EXIT (COWARDLY)%s\n", RED, RESET);
+    printf("\n> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
