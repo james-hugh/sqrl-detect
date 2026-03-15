@@ -24,12 +24,20 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+
+/* UI Theming */
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] ✅ Authentication successful. Welcome, Sentinel." RESET
+#define UI_AUTH_FAILURE RED "[FAILURE] ❌ INCORRECT PRAYER." RESET
+#define UI_MENU_HEADER  YEL "--- MAIN MENU ---" RESET
+#define UI_MENU_ENGAGE  GRN "1. 🕹️  ENGAGE DEFENSES" RESET
+#define UI_MENU_EXIT    RED "2. 💀  EXIT (COWARDLY)" RESET
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -139,8 +147,8 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        // Clear screen
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -165,7 +173,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -189,13 +197,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,8 +217,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("%s\n", UI_MENU_HEADER);
+    printf("%s\n", UI_MENU_ENGAGE);
+    printf("%s\n", UI_MENU_EXIT);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
