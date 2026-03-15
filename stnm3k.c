@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +25,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -38,9 +40,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -96,16 +98,12 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char bars[] = "XXXXXXXXXXXXXXXXXXXX********************....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *fill = (val > 15) ? &bars[0] : (val > 8) ? &bars[20] : &bars[40];
+        printf("%2d |%.*s\n", val, val, fill);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -140,7 +138,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -169,6 +167,50 @@ void engage_defenses() {
         fflush(stdout);
         sleep(1);
     }
+}
+
+/**
+ * Provides a status report on the user's pillow fort.
+ */
+void check_pillow_fort() {
+    const char* status[] = {
+        "SOLID AS A ROCK. THE GOOGLE MACHINE CANNOT PENETRATE COTTON.",
+        "SLIGHT SAGGING IN THE SOUTH TURRET. REINFORCE WITH MORE CUSHIONS.",
+        "CRITICAL FAILURE! THE LEFT DUVET HAS COLLAPSED!",
+        "COCAINE RESERVES ARE LOW. THE COWS ARE WORRIED.",
+        "PERFECT. THE SMELL OF PARANOIA IS STRONG HERE."
+    };
+    printf("\n🏰 --- PILLOW FORT STATUS REPORT ---\n");
+    printf("Integrity: %s\n", status[rand() % 5]);
+    printf("Cocaine Reserves: %d mg\n", rand() % 50);
+    printf("Squirrel Perimeter: UNTOUCHED.\n");
+    printf("\nPress Enter to return to the command center...");
+    char buffer[100];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
+}
+
+/**
+ * Displays the last few entries from the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    printf("\n📜 --- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. Silence is the ultimate truth.\n");
+    } else {
+        char line[256];
+        int count = 0;
+        // Simple way to show the last 10 lines (not efficient, but functional for this size)
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+            count++;
+        }
+        if (count == 0) printf("The scrolls are empty. Silence is the ultimate truth.\n");
+        fclose(fp);
+    }
+    printf("\nPress Enter to return to the command center...");
+    char buffer[100];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
 }
 
 /**
@@ -209,15 +251,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(CLEAR_SCREEN);
+        printf("%s🖥️  STNM3K MAIN COMMAND CENTER%s\n", YEL, RESET);
+        printf("-------------------------------\n");
+        printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. 🏰  CHECK PILLOW FORT%s\n", GRN, RESET);
+        printf("%s3. 📜  VIEW HOLY SCROLLS%s\n", GRN, RESET);
+        printf("%s4. 💀  EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("\n> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "FORT") != NULL) {
+            check_pillow_fort();
+        } else if (strstr(command, "3") != NULL || strstr(command, "SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
