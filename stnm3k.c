@@ -31,6 +31,8 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -139,8 +141,7 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -165,7 +166,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -188,6 +189,7 @@ int authenticate_user() {
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s[SUCCESS]%s ✅\n", GRN, RESET);
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -209,8 +211,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s--- MAIN MENU ---%s\n", YEL, RESET);
+    printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
