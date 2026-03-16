@@ -31,6 +31,13 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Theming */
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] ✅" RESET
+#define UI_AUTH_FAILURE RED "[FAILURE] ❌" RESET
+#define UI_MENU_HEADER YEL "--- MAIN MENU ---" RESET
+#define UI_EXIT_HINT YEL "Ctrl+C" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -140,7 +147,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -165,7 +172,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%s to retreat to your pillow fort)\n", UI_EXIT_HINT);
         fflush(stdout);
         sleep(1);
     }
@@ -189,13 +196,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s INCORRECT PRAYER.\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s Authentication successful. Welcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,8 +216,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s\n", UI_MENU_HEADER);
+    printf("%s1. 🕹️  ENGAGE DEFENSES%s\n", GRN, RESET);
+    printf("%s2. 💀 EXIT (COWARDLY)%s\n", RED, RESET);
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
