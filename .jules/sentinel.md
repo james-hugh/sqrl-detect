@@ -1,0 +1,4 @@
+## 2026-03-12 - TOCTOU and Insecure Permissions in Logging
+**Vulnerability:** The `init_system` function used a `stat` followed by `mkdir` sequence, which is susceptible to a Time-of-Check to Time-of-Use (TOCTOU) race condition. Additionally, the application relied on the default system umask, resulting in log files and directories with overly permissive permissions (e.g., 664 for logs).
+**Learning:** Checking for directory existence before creation is non-atomic and can be exploited by an attacker to intercept the creation process. Relying on default umask is dangerous for applications handling sensitive logs.
+**Prevention:** Use atomic system calls like `mkdir` and check `errno` for `EEXIST`. Explicitly set a restrictive `umask(0077)` at the beginning of the program to ensure all created files and directories have secure default permissions.
