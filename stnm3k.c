@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,17 +31,61 @@
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+
+/* UI Presentation Macros */
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] " RESET "Authentication successful. Welcome, Sentinel. ✅\n"
+#define UI_AUTH_FAILURE RED "[FAILURE] " RESET "\nINCORRECT PRAYER.\nThe Polish cows are disappointed and the Google Machine is laughing at you.\n"
+#define UI_MENU_HEADER YEL "--- STNM3K MAIN MENU ---" RESET
+#define UI_EXIT_HINT YEL "(Ctrl+C to retreat to your pillow fort)" RESET
 
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Displays the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty. The squirrels are either silent or extremely sneaky.\n");
+        return;
+    }
+
+    printf("\n--- 📜 HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("\nEnd of scrolls. Press Enter to return to the fort.");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
+}
+
+/**
+ * Checks the status of the pillow fort.
+ */
+void check_pillow_fort() {
+    printf("\n--- 🏰 PILLOW FORT STATUS REPORT ---\n");
+    printf("Structural Integrity: %d%%\n", 80 + rand() % 21);
+    printf("Blanket Thickness: %sOPTIMAL%s\n", GRN, RESET);
+    printf("Cookie Reserves: %d%% (Urgent replenishment advised)\n", rand() % 50);
+    printf("Cocaine Cow Proximity: %s %s\n", (rand() % 2) ? "CLOSE" : "SAFE", (rand() % 2) ? "🐄" : "🛡️");
+    printf("\nPress Enter to return to your post.");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Implements security hardening by setting umask and using atomic mkdir.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure restrictive permissions for created files/dirs
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to initialize holy logs directory");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -94,18 +139,14 @@ void print_threat_meter(int level) {
 
 /**
  * Renders the GUI graph of chaos.
+ * Optimized with static buffers and string formatting to reduce syscalls.
  */
 void print_graph_of_chaos() {
+    static const char buffer[] = "XXXXXXXXXXXXXXXXXXXX";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        int val = rand() % 21; // 0-20
+        printf("%2d |%.*s\n", val, val, buffer);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -189,13 +230,12 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
-            printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf(UI_AUTH_FAILURE);
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,15 +249,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n" UI_MENU_HEADER "\n");
+        printf("1. 🕹️  ENGAGE DEFENSES\n");
+        printf("2. 📜 VIEW HOLY SCROLLS\n");
+        printf("3. 🏰 CHECK PILLOW FORT\n");
+        printf("4. 💀 EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (command[0] == '1') {
+            engage_defenses();
+        } else if (command[0] == '2') {
+            view_holy_scrolls();
+        } else if (command[0] == '3') {
+            check_pillow_fort();
+        } else if (command[0] == '4' || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid command. The cows are confused.\n");
+        }
     }
 
     return 0;
