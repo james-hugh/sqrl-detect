@@ -31,6 +31,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Theming */
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] ✅" RESET
+#define UI_AUTH_FAILURE RED "[FAILURE] ❌" RESET
+#define UI_MENU_HEADER YEL "--- MAIN COMMAND CENTER ---" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -189,13 +194,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s\nWelcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,8 +214,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s\n", UI_MENU_HEADER);
+    printf("1. 🕹️  ENGAGE DEFENSES\n");
+    printf("2. 💀 EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
