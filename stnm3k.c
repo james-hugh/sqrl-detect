@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,13 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Components */
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
+#define UI_AUTH_SUCCESS GRN " [SUCCESS] ✅" RESET
+#define UI_AUTH_FAILURE RED " [FAILURE] ❌" RESET
+#define UI_MENU_HEADER YEL "--- MAIN MENU ---" RESET
+#define UI_EXIT_HINT YEL "(Ctrl+C to retreat to your pillow fort)" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +46,11 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    // Set umask for restrictive log permissions
+    umask(0077);
+    // Atomic directory creation to prevent TOCTOU race conditions
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -96,16 +106,12 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char bars[] = "XXXXXXXXXXXXXXXXXXXX********************....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *marker = (val > 15) ? &bars[0] : (val > 8) ? &bars[20] : &bars[40];
+        printf("%2d |%.*s\n", val, val, marker);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -130,6 +136,53 @@ const char* get_random_threat() {
 }
 
 /**
+ * Displays the holy scrolls (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n[ERROR] The Holy Scrolls are missing. Have the squirrels taken them?\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+        count++;
+    }
+    fclose(fp);
+
+    if (count == 0) {
+        printf("(The scrolls are currently blank. A rare moment of peace... or is it?)\n");
+    }
+
+    printf("\nPress Enter to return to the fort...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Silence warning */ }
+}
+
+/**
+ * Checks the status of the pillow fort.
+ */
+void check_pillow_fort() {
+    printf("\n--- PILLOW FORT STATUS REPORT ---\n");
+    const char* statuses[] = {
+        "SECURE: Blankets are tightly tucked.",
+        "WARNING: Left cushion is slightly askew.",
+        "CRITICAL: A squirrel was seen sniffing the perimeter!",
+        "OPTIMAL: Polish cows are patrolling the duvet.",
+        "SECURE: Fungal messaging encryption is holding."
+    };
+    printf("Status: %s\n", statuses[rand() % 5]);
+    printf("Supplies: 12 Juice boxes, 4 bags of Pretzels, 1 Sacred Cow.\n");
+    printf("\nPress Enter to return to the fort...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Silence warning */ }
+}
+
+/**
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
@@ -139,8 +192,8 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        // Clear screen
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -165,7 +218,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... %s\n", UI_EXIT_HINT);
         fflush(stdout);
         sleep(1);
     }
@@ -189,13 +242,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s INCORRECT PRAYER.\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s Authentication successful. Welcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,15 +262,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s\n", UI_MENU_HEADER);
+        printf("1. 🕹️  ENGAGE DEFENSES\n");
+        printf("2. 📜 VIEW HOLY SCROLLS\n");
+        printf("3. 🏰 CHECK PILLOW FORT\n");
+        printf("4. 💀 EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "FORT") != NULL) {
+            check_pillow_fort();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
