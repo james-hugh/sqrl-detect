@@ -31,6 +31,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Presentation Macros */
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] ✅" RESET
+#define UI_AUTH_FAILURE RED "[FAILURE] ❌" RESET
+#define UI_MENU_HEADER YEL "--- STNM3K MAIN MENU ---" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -189,18 +194,74 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s\n", UI_AUTH_FAILURE);
+            printf("INCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s\n", UI_AUTH_SUCCESS);
+    printf("Authentication successful. Welcome, Sentinel.\n");
     return 1;
+}
+
+/**
+ * Reads and displays the holy scrolls of truth (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The holy scrolls are currently empty or unreachable.\n");
+        return;
+    }
+
+    printf("\n--- READING HOLY SCROLLS ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("\n--- END OF SCROLLS ---\n");
+
+    printf("\nPress Enter to return to the menu...");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Wait for user */ }
+}
+
+/**
+ * Checks the status of the user's pillow fort defense.
+ */
+void check_pillow_fort() {
+    int integrity = rand() % 101;
+    const char *status = "VULNERABLE";
+    const char *color = RED;
+
+    if (integrity > 90) {
+        status = "SACROSANCT";
+        color = GRN;
+    } else if (integrity > 50) {
+        status = "STABLE";
+        color = YEL;
+    }
+
+    printf("\n--- PILLOW FORT STATUS REPORT ---\n");
+    printf("Structural Integrity: %s%d%%%s\n", color, integrity, RESET);
+    printf("Deployment Status: %s[%s]%s\n", color, status, RESET);
+    printf("Current Occupancy: James Hungh & Polish Cow\n");
+    printf("----------------------------------\n");
+
+    printf("\nPress Enter to return to the menu...");
+    char buffer[10];
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Wait for user */ }
 }
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main application entry point.
+ * @return 0 on success, 1 on authentication failure.
+ */
 int main() {
     init_system();
 
@@ -209,15 +270,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s\n", UI_MENU_HEADER);
+        printf("1. 🕹️ ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. CHECK PILLOW FORT\n");
+        printf("4. 💀 EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "FORT") != NULL) {
+            check_pillow_fort();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("\nCowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("\nUnknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
