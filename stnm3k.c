@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +39,14 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    /* Harden system by ensuring all created files are owner-only. */
+    umask(0077);
+
+    /* Atomic directory creation to prevent TOCTOU race conditions. */
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
@@ -74,6 +80,10 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
+    /* Clamp level between 0 and 100 to prevent buffer over-reads. */
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
+
     const char *color = GRN;
     const char *status = "SECURE";
     static const char bars_fill[] = "####################";
