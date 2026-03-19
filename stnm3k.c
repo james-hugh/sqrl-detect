@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,18 +30,26 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
+
+/* UI Theming */
+#define UI_AUTH_SUCCESS  GRN "[SUCCESS] ✅ " RESET
+#define UI_AUTH_FAILURE  RED "[FAILURE] ❌ " RESET
+#define UI_MENU_HEADER   YEL "\n--- SENTINEL COMMAND CENTER ---" RESET
 
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Implements security hardening by setting umask and using atomic directory creation.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure restrictive permissions (700) for created files/dirs
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create secure logs directory");
+        exit(1);
     }
 }
 
@@ -108,6 +117,55 @@ void print_graph_of_chaos() {
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
+}
+
+/* --- NEW SENTINEL FEATURES --- */
+
+/**
+ * Displays the holy scrolls of truth (logs) for the sentinel's inspection.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    char buffer[256];
+
+    printf("\n" CYN "--- 📜 HOLY SCROLLS OF TRUTH 📜 ---" RESET "\n");
+    if (fp == NULL) {
+        printf("The scrolls are empty. The squirrels are either gone or very quiet.\n");
+    } else {
+        while (fgets(buffer, sizeof(buffer), fp)) {
+            printf("%s", buffer);
+        }
+        fclose(fp);
+    }
+    printf(CYN "--- END OF SCROLLS ---" RESET "\n");
+    printf("\nPress Enter to return to the Command Center...");
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warn_unused_result */ }
+}
+
+/**
+ * Checks the integrity of the sentinel's pillow fort and cow status.
+ */
+void check_pillow_fort() {
+    int integrity = (rand() % 41) + 60; // 60-100%
+    int cocaine_reserves = rand() % 50; // mg
+
+    printf("\n" CYN "--- 🏰 PILLOW FORT STATUS REPORT ---" RESET "\n");
+    printf("Fort Integrity: [%d%%] ", integrity);
+    if (integrity > 90) printf(GRN "SOLID AS A COW." RESET "\n");
+    else if (integrity > 75) printf(YEL "MINOR BLANKET SAG DETECTED." RESET "\n");
+    else printf(RED "CRITICAL STRUCTURAL WEAKNESS!" RESET "\n");
+
+    printf("Polish Cow Cocaine Reserves: %d mg\n", cocaine_reserves);
+    if (cocaine_reserves < 10) printf(RED "WARNING: Laps may slow down!" RESET "\n");
+    else printf(GRN "Laps proceeding at 3 AM pace." RESET "\n");
+
+    printf("Squirrel Decoys: ACTIVE\n");
+    printf("Mushroom Network: ENCRYPTED AND FUNGAL\n");
+    printf(CYN "------------------------------------" RESET "\n");
+
+    char buffer[10];
+    printf("\nPress Enter to return...");
+    if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warn_unused_result */ }
 }
 
 /* --- CORE ENGINE LOGIC --- */
@@ -184,18 +242,21 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            printf("\n" UI_AUTH_FAILURE "Prayer interrupted.\n");
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n" UI_AUTH_FAILURE "INCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" UI_AUTH_SUCCESS "Authentication successful. Welcome, Sentinel.\n");
     return 1;
 }
 
@@ -209,15 +270,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(UI_MENU_HEADER);
+        printf("\n1. 🕹️  ENGAGE DEFENSES");
+        printf("\n2. 📜  VIEW HOLY SCROLLS");
+        printf("\n3. 🏰  CHECK PILLOW FORT");
+        printf("\n4. 💀  EXIT (COWARDLY)");
+        printf("\n> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") || strstr(command, "FORT")) {
+            check_pillow_fort();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("\nCowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("\nINVALID COMMAND. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
