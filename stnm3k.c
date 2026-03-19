@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -26,21 +27,34 @@
 #define METER_WIDTH 20
 
 /* ANSI Colors */
-#define RED "\x1B[31m"
-#define GRN "\x1B[32m"
-#define YEL "\x1B[33m"
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
 #define RESET "\x1B[0m"
+
+/* UI Themes */
+#define UI_AUTH_SUCCESS GRN "[SUCCESS] ✅" RESET
+#define UI_AUTH_FAILURE RED "[FAILURE] ❌" RESET
+#define UI_MENU_HEADER  YEL "       --- STNM3K MAIN MENU ---       " RESET
+
+/* Emojis for Menu Options */
+#define EMOJI_ENGAGE "🕹️"
+#define EMOJI_LOGS   "📜"
+#define EMOJI_FORT   "🏰"
+#define EMOJI_EXIT   "💀"
 
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Implements umask(0077) for restrictive log permissions and an atomic mkdir
+ * to prevent TOCTOU race conditions.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -113,9 +127,21 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
- * Returns a random threat message for the paranoid user.
+ * Renders the monitoring dashboard header.
  */
-const char* get_random_threat() {
+void print_monitoring_header() {
+    printf("\033[H\033[J"); // Clear screen
+    printf("🖥️  " YEL "SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s" RESET "\n", VERSION);
+    printf("PLATFORM: %s\n\n", PLATFORM);
+}
+
+/**
+ * Handles threat alerts during monitoring.
+ * @param level The current threat level.
+ */
+void handle_threat_alert(int level) {
+    if (level <= 70) return;
+
     const char* threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
@@ -126,7 +152,15 @@ const char* get_random_threat() {
         "Fungal network interference detected!",
         "Infected acorn payload intercepted!"
     };
-    return threats[rand() % 8];
+
+    const char* threat = threats[rand() % 8];
+    const char* alert_name = (level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
+    const char* alert_color = (level > 85) ? RED : YEL;
+
+    printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
+    printf("ALERT: %s\n", threat);
+    log_event(threat);
+    printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
 }
 
 /**
@@ -139,11 +173,7 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
-
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        print_monitoring_header();
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -154,18 +184,9 @@ void engage_defenses() {
         printf("\n");
         print_graph_of_chaos();
 
-        if (threat_level > 70) {
-            const char* threat = get_random_threat();
-            const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
-            const char* alert_color = (threat_level > 85) ? RED : YEL;
+        handle_threat_alert(threat_level);
 
-            printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
-            printf("ALERT: %s\n", threat);
-            log_event(threat);
-            printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
-        }
-
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (" YEL "Ctrl+C" RESET " to retreat to your pillow fort)\n");
         fflush(stdout);
         sleep(1);
     }
@@ -179,7 +200,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf("\n🖥️  " YEL "STNM3K v%s" RESET " INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
@@ -189,18 +210,23 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s\nWelcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main application entry point.
+ * Initializes system, handles authentication, and provides the main menu loop.
+ * @return 0 on clean exit, 1 on authentication failure.
+ */
 int main() {
     init_system();
 
@@ -209,15 +235,38 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s\n", UI_MENU_HEADER);
+        printf("1. %s ENGAGE DEFENSES\n", EMOJI_ENGAGE);
+        printf("2. %s VIEW HOLY SCROLLS (LOGS)\n", EMOJI_LOGS);
+        printf("3. %s CHECK PILLOW FORT\n", EMOJI_FORT);
+        printf("4. %s EXIT (COWARDLY)\n", EMOJI_EXIT);
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") || strstr(command, "ENGAGE")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "LOGS")) {
+            printf("\n--- HOLY SCROLLS (LOGS) ---\n");
+            if (system("cat " LOG_FILE " 2>/dev/null || echo 'No logs found yet.'") == -1) {
+                perror("Failed to display scrolls");
+            }
+            printf("\nPress Enter to return to menu...");
+            char buffer[10];
+            if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
+        } else if (strstr(command, "3") || strstr(command, "FORT")) {
+            printf("\n--- PILLOW FORT STATUS ---\n");
+            printf("Structure Integrity: %d%% (Pillows are fluffy)\n", (rand() % 20) + 80);
+            printf("Cow status: %s\n", (rand() % 2) ? "Sleeping" : "Running laps");
+            printf("\nPress Enter to return to menu...");
+            char buffer[10];
+            if (fgets(buffer, sizeof(buffer), stdin)) { /* Silence warning */ }
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The squirrels are confused by your actions.\n");
+        }
     }
 
     return 0;
