@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +39,12 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    // Set umask to ensure restricted permissions for all created files/dirs
+    umask(0077);
+
+    // Secure directory creation: attempt mkdir directly to avoid TOCTOU races
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -78,6 +82,10 @@ void print_threat_meter(int level) {
     const char *status = "SECURE";
     static const char bars_fill[] = "####################";
     static const char bars_empty[] = "--------------------";
+
+    // Defensive clamping to prevent out-of-bounds reads on static buffers
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
 
     if (level > 85) {
         color = RED;
