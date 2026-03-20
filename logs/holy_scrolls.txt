@@ -1,0 +1,97 @@
+[Fri Mar 20 21:57:25 2026] COCAINE-COW-LOG: DEFENSES ENGAGED. SHARPENING ACORNS.
+[Fri Mar 20 21:57:29 2026] COCAINE-COW-LOG: Google Machine spy attempted packet injection!
+[Fri Mar 20 21:57:30 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:31 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:32 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:57:33 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:34 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:35 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:57:36 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:57:37 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:38 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:39 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:57:40 2026] COCAINE-COW-LOG: Google Machine spy attempted packet injection!
+[Fri Mar 20 21:57:41 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:42 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:57:43 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:57:45 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:57:46 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:47 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:57:48 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:57:49 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:50 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:57:51 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:57:52 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:53 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:57:54 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:57:55 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:57:56 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:57:57 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:58:01 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:58:03 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:05 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:06 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:07 2026] COCAINE-COW-LOG: Google Machine spy attempted packet injection!
+[Fri Mar 20 21:58:08 2026] COCAINE-COW-LOG: Google Machine spy attempted packet injection!
+[Fri Mar 20 21:58:10 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:11 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:12 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:13 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:14 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:15 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:17 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:18 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:19 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:58:20 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:21 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:22 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:23 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:24 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:25 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:26 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:27 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:28 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:29 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:58:30 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:31 2026] COCAINE-COW-LOG: Google Machine spy attempted packet injection!
+[Fri Mar 20 21:58:35 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:35 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:58:36 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:58:36 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:58:37 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:37 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:58:38 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:58:39 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:40 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:58:47 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:48 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:49 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:50 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:51 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:52 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:53 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:54 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:58:55 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:58:56 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:58:57 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:58:58 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:58:59 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:59:00 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:59:01 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:59:02 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:59:03 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:59:04 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:59:05 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:59:06 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:59:07 2026] COCAINE-COW-LOG: Bush-based spy spotted near router!
+[Fri Mar 20 21:59:08 2026] COCAINE-COW-LOG: Fungal network interference detected!
+[Fri Mar 20 21:59:10 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:59:11 2026] COCAINE-COW-LOG: Polish cow alert: Laps being run at 3 AM!
+[Fri Mar 20 21:59:12 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:59:13 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:59:14 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
+[Fri Mar 20 21:59:15 2026] COCAINE-COW-LOG: Infected acorn payload intercepted!
+[Fri Mar 20 21:59:16 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:59:17 2026] COCAINE-COW-LOG: WiFi Acorn detected in sector 7!
+[Fri Mar 20 21:59:18 2026] COCAINE-COW-LOG: Suspicious squirrel movement near pillow fort!
+[Fri Mar 20 21:59:28 2026] COCAINE-COW-LOG: Talibani rodent infiltrating sacred machine!
