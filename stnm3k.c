@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Macros */
+#define UI_AUTH_SUCCESS GRN "✅ " RESET
+#define UI_AUTH_FAILURE RED "❌ " RESET
+#define UI_MENU_HEADER  YEL "--- MAIN MENU ---" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +44,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure restrictive log permissions
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -108,6 +114,53 @@ void print_graph_of_chaos() {
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
+}
+
+/* --- EXTENDED ENGINE FEATURES --- */
+
+/**
+ * Reads and displays the holy scrolls of truth (logs).
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nNo holy scrolls found. The cows have not yet spoken.\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH (LOGS) ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("\n--- END OF SCROLLS ---\n");
+}
+
+/**
+ * Runs a simulated fungal network diagnostic.
+ */
+void run_fungal_diagnostic() {
+    const char *steps[] = {
+        "Connecting to the underground mushroom network...",
+        "Authenticating with the Mycelium Overlord...",
+        "Scanning for WiFi acorns in the root system...",
+        "Verifying spore encryption keys...",
+        "Cross-referencing with Polish cow activity logs..."
+    };
+
+    printf("\n🍄 STARTING FUNGAL NETWORK DIAGNOSTIC 🍄\n");
+    for (int i = 0; i < 5; i++) {
+        printf("%s\n", steps[i]);
+        fflush(stdout);
+        usleep(500000); // 0.5s delay
+    }
+
+    if (rand() % 10 > 7) {
+        printf(RED "WARNING: Fungal interference detected. Squirrels may be tapping the roots!\n" RESET);
+    } else {
+        printf(GRN "Fungal integrity verified. The mushroom network is pure.\n" RESET);
+    }
 }
 
 /* --- CORE ENGINE LOGIC --- */
@@ -189,13 +242,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s INCORRECT PRAYER. %s\n", UI_AUTH_FAILURE, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s Authentication successful. Welcome, Sentinel. %s\n", UI_AUTH_SUCCESS, RESET);
     return 1;
 }
 
@@ -209,15 +262,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s\n", UI_MENU_HEADER);
+        printf("1. 🕹️  ENGAGE DEFENSES\n");
+        printf("2. 📜 VIEW HOLY SCROLLS (LOGS)\n");
+        printf("3. 🍄 RUN FUNGAL DIAGNOSTIC\n");
+        printf("4. 💀 EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE DEFENSES")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "VIEW HOLY SCROLLS")) {
+            view_logs();
+        } else if (strstr(command, "3") || strstr(command, "RUN FUNGAL DIAGNOSTIC")) {
+            run_fungal_diagnostic();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("The Polish cows are confused by your input. Try again.\n");
+        }
     }
 
     return 0;
