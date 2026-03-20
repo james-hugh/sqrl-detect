@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,22 +32,31 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Symbols and Theming */
+#define UI_AUTH_SUCCESS GRN "✅ SUCCESS" RESET
+#define UI_AUTH_FAILURE RED "❌ FAILURE" RESET
+#define UI_MENU_HEADER  YEL "--- MAIN MENU ---" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
- * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * @brief Initializes the system components.
+ *
+ * Seeds the random number generator and ensures the log directory
+ * exists with restrictive permissions (0700).
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
 /**
- * Logs a message to the holy scrolls of truth.
- * @param event The event message to log.
+ * @brief Logs an event to the persistent log file.
+ *
+ * @param event The description of the event to log.
  */
 void log_event(const char *event) {
     FILE *fp = fopen(LOG_FILE, "a");
@@ -70,8 +80,9 @@ void log_event(const char *event) {
 /* --- VISUALIZATION ENGINE --- */
 
 /**
- * Renders the squirrel threat meter.
- * @param level Threat level from 0 to 100.
+ * @brief Renders the visual threat meter to stdout.
+ *
+ * @param level The current threat level (0-100).
  */
 void print_threat_meter(int level) {
     const char *color = GRN;
@@ -93,18 +104,22 @@ void print_threat_meter(int level) {
 }
 
 /**
- * Renders the GUI graph of chaos.
+ * @brief Renders the "Graph of Chaos" showing random volatility.
+ *
+ * Uses static buffers to optimize string rendering.
  */
 void print_graph_of_chaos() {
+    static const char x_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_fill[] = "********************";
+    static const char dot_fill[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, x_fill);
+        else if (val > 8) printf("%.*s", val, star_fill);
+        else printf("%.*s", val, dot_fill);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -113,7 +128,9 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
- * Returns a random threat message for the paranoid user.
+ * @brief Selects a random threat message.
+ *
+ * @return A constant string pointer to a random threat.
  */
 const char* get_random_threat() {
     const char* threats[] = {
@@ -130,7 +147,34 @@ const char* get_random_threat() {
 }
 
 /**
- * Enters the main monitoring loop.
+ * @brief Displays the monitoring application header.
+ */
+void print_monitoring_header() {
+    printf("\033[H\033[J"); // Clear screen
+    printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+    printf("PLATFORM: %s\n\n", PLATFORM);
+}
+
+/**
+ * @brief Handles threat alerts based on the current level.
+ *
+ * @param threat_level The current threat level (0-100).
+ */
+void handle_threat_alert(int threat_level) {
+    if (threat_level > 70) {
+        const char* threat = get_random_threat();
+        const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
+        const char* alert_color = (threat_level > 85) ? RED : YEL;
+
+        printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
+        printf("ALERT: %s\n", threat);
+        log_event(threat);
+        printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+    }
+}
+
+/**
+ * @brief Enters the main threat monitoring loop.
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
@@ -139,13 +183,9 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        print_monitoring_header();
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
-
-        int change = (rand() % 31) - 15; // -15 to +15
+        int change = (rand() % 31) - 15;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -154,16 +194,7 @@ void engage_defenses() {
         printf("\n");
         print_graph_of_chaos();
 
-        if (threat_level > 70) {
-            const char* threat = get_random_threat();
-            const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
-            const char* alert_color = (threat_level > 85) ? RED : YEL;
-
-            printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
-            printf("ALERT: %s\n", threat);
-            log_event(threat);
-            printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
-        }
+        handle_threat_alert(threat_level);
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
         fflush(stdout);
@@ -172,8 +203,9 @@ void engage_defenses() {
 }
 
 /**
- * Handles user authentication via the sacred prayer.
- * @return 1 if authenticated, 0 otherwise.
+ * @brief Authenticates the user via the "sacred prayer" protocol.
+ *
+ * @return int 1 if authentication is successful, 0 otherwise.
  */
 int authenticate_user() {
     char command[100];
@@ -184,18 +216,21 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            printf("\n%s\n", UI_AUTH_FAILURE);
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s: INCORRECT PRAYER.\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s: Authentication successful. Welcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,15 +244,21 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s\n", UI_MENU_HEADER);
+        printf("1. 🕹️  ENGAGE DEFENSES\n");
+        printf("2. 💀 EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "EXIT") != NULL || strstr(command, "2") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
