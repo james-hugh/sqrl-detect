@@ -31,6 +31,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Theming Macros */
+#define UI_AUTH_SUCCESS GRN "✅ " RESET
+#define UI_AUTH_FAILURE RED "❌ " RESET
+#define UI_MENU_HEADER  YEL "--- MAIN MENU ---" RESET
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -113,6 +118,17 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Renders the monitoring dashboard header.
+ */
+void print_monitoring_header() {
+    // Clear screen (works on most terminals)
+    printf("\033[H\033[J");
+
+    printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+    printf("PLATFORM: %s\n\n", PLATFORM);
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
@@ -139,11 +155,7 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
-
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        print_monitoring_header();
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -165,7 +177,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -187,15 +199,16 @@ int authenticate_user() {
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
+            printf("%sPrayer accepted.\n", UI_AUTH_SUCCESS);
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%sINCORRECT PRAYER.\n", UI_AUTH_FAILURE);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.\n", UI_AUTH_SUCCESS);
     return 1;
 }
 
@@ -209,8 +222,9 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("\n%s\n", UI_MENU_HEADER);
+    printf("1. 🕹️  ENGAGE DEFENSES\n");
+    printf("2. 💀 EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
