@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* UI Presentation Macros */
+#define UI_AUTH_SUCCESS GRN "✅"
+#define UI_AUTH_FAILURE RED "❌"
+#define UI_MENU_HEADER YEL
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +44,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log sanctuary");
     }
 }
 
@@ -64,6 +70,29 @@ void log_event(const char *event) {
     }
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    fclose(fp);
+}
+
+/**
+ * Reads and displays the contents of the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        if (errno == ENOENT) {
+            printf("\n%s[EMPTY SCROLLS]%s No events have been recorded yet.\n", YEL, RESET);
+        } else {
+            perror("Failed to unroll the holy scrolls");
+        }
+        return;
+    }
+
+    char line[256];
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
     fclose(fp);
 }
 
@@ -108,6 +137,35 @@ void print_graph_of_chaos() {
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
+}
+
+/**
+ * Simulates a diagnostic check of the "Pillow Fort" security systems.
+ */
+void run_diagnostics() {
+    const char *checks[] = {
+        "WiFi Acorn Integrity Check",
+        "Polish Cow Cocaine Sync Status",
+        "Mushroom Network Connectivity",
+        "Pillow Fort Structural Stability",
+        "Squirrel ESP Jamming Efficiency"
+    };
+
+    printf("\n--- INITIALIZING PILLOW FORT DIAGNOSTICS ---\n");
+    for (int i = 0; i < 5; i++) {
+        printf("%s... ", checks[i]);
+        fflush(stdout);
+
+        // Simulated progress bar
+        printf("[");
+        for (int j = 0; j < 10; j++) {
+            printf("#");
+            fflush(stdout);
+            usleep(100000); // 100ms
+        }
+        printf("] %s[OK]%s\n", GRN, RESET);
+    }
+    printf("All systems %sGLORY BE%s! Your fortress is unsullied.\n", YEL, RESET);
 }
 
 /* --- CORE ENGINE LOGIC --- */
@@ -188,14 +246,15 @@ int authenticate_user() {
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s [PRAYER ACCEPTED]%s\n", UI_AUTH_SUCCESS, RESET);
         } else {
-            printf("\nINCORRECT PRAYER.\n");
-            printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf("\n%s INCORRECT PRAYER.\n", UI_AUTH_FAILURE);
+            printf("The Polish cows are disappointed and the Google Machine is laughing at you.%s\n", RESET);
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s Authentication successful. Welcome, Sentinel.%s\n", UI_AUTH_SUCCESS, RESET);
     return 1;
 }
 
@@ -209,15 +268,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n%s--- STNM3K MAIN MENU ---%s\n", UI_MENU_HEADER, RESET);
+        printf("1. ENGAGE DEFENSES 🕹️\n");
+        printf("2. VIEW HOLY SCROLLS 📜\n");
+        printf("3. RUN DIAGNOSTICS 🛠️\n");
+        printf("4. EXIT (COWARDLY) 💀\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") || strstr(command, "ENGAGE DEFENSES")) {
+            engage_defenses();
+        } else if (strstr(command, "2") || strstr(command, "VIEW HOLY SCROLLS")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") || strstr(command, "RUN DIAGNOSTICS")) {
+            run_diagnostics();
+        } else if (strstr(command, "4") || strstr(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid command. The cows are confused.\n");
+        }
     }
 
     return 0;
