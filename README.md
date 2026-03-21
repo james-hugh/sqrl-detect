@@ -22,6 +22,10 @@ RAW-ALERT Mode – Forces ALL popups to stay on top, ensuring no sneaky squirrel
 
 GUI Graphs of Chaos – Watch network traffic like watching cows run laps at 3 AM… hypnotic, erratic, and slightly concerning.
 
+Holy Scrolls Viewer – Direct access to your Cow-Enhanced logs. See the truth, unrolled and unfiltered.
+
+Pillow Fort Diagnostics – Comprehensive security checks to ensure your fortress remains unsullied by bush-based spies.
+
 🧨 Installation
 
 Pray to Windows ME before downloading.
@@ -34,11 +38,13 @@ Optional: feed your Polish cow 5mg of cocaine for optimal alert synergy.
 
 🕹️ Usage
 
-Click ENGAGE DEFENSES to start monitoring.
+Select ENGAGE DEFENSES to start monitoring.
 
 Watch the SQUIRREL THREAT METER spike with every WiFi ping.
 
-Check logs/holy_scrolls.txt for suspicious activity.
+Access VIEW HOLY SCROLLS to check for suspicious activity.
+
+Run PILLOW FORT DIAGNOSTICS to verify your system integrity.
 
 If the cows start running laps at 3 AM, congratulations—you’ve triggered MAXIMUM ALERT MODE.
 
