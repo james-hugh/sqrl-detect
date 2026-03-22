@@ -88,8 +88,8 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
-           color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
+    printf("SQUIRREL THREAT METER: %s[%s]%s [%s%.*s%s%.*s] %d%%\n",
+           color, status, RESET, color, bars, bars_fill, RESET, METER_WIDTH - bars, bars_empty, level);
 }
 
 /**
@@ -101,9 +101,9 @@ void print_graph_of_chaos() {
         int val = rand() % 20;
         printf("%2d |", val);
         for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+            if (val > 15) printf(RED "X" RESET);
+            else if (val > 8) printf(YEL "*" RESET);
+            else printf(GRN "." RESET);
         }
         printf("\n");
     }
@@ -195,7 +195,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n" GRN "Authentication successful. Welcome, Sentinel." RESET "\n");
     return 1;
 }
 
@@ -209,8 +209,8 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf(YEL "1." RESET " ENGAGE DEFENSES\n");
+    printf(YEL "2." RESET " EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
