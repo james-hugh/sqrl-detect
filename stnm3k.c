@@ -25,6 +25,16 @@
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
 
+/**
+ * System configuration toggles.
+ */
+typedef struct {
+    int raw_alert_mode;     // 1 for on, 0 for off
+    int cow_sync_active;    // 1 for on, 0 for off
+} SystemSettings;
+
+static SystemSettings g_settings = {0, 0};
+
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
@@ -42,6 +52,9 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+    // Default settings
+    g_settings.raw_alert_mode = 0;
+    g_settings.cow_sync_active = 0;
 }
 
 /**
@@ -65,6 +78,52 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Displays the contents of the holy scrolls.
+ */
+void read_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty. No squirrel incursions yet.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n\n");
+    fclose(fp);
+}
+
+/**
+ * Settings menu for the STNM3K system.
+ */
+void pillow_fort_command_center() {
+    char choice[100];
+    while (1) {
+        printf("\n--- PILLOW FORT COMMAND CENTER (Settings) ---\n");
+        printf("1. Toggle RAW-ALERT Mode [%s]\n", g_settings.raw_alert_mode ? "ON" : "OFF");
+        printf("2. Toggle Cow Synchronization [%s]\n", g_settings.cow_sync_active ? "ON" : "OFF");
+        printf("3. RETURN TO MAIN MENU\n");
+        printf("> ");
+        if (fgets(choice, sizeof(choice), stdin) == NULL) break;
+
+        if (strstr(choice, "1") != NULL) {
+            g_settings.raw_alert_mode = !g_settings.raw_alert_mode;
+            printf("RAW-ALERT Mode is now %s.\n", g_settings.raw_alert_mode ? "ON" : "OFF");
+        } else if (strstr(choice, "2") != NULL) {
+            g_settings.cow_sync_active = !g_settings.cow_sync_active;
+            printf("Cow Synchronization is now %s.\n", g_settings.cow_sync_active ? "ON" : "OFF");
+        } else if (strstr(choice, "3") != NULL || strstr(choice, "RETURN") != NULL) {
+            break;
+        } else {
+            printf("Invalid command in the pillow fort. The cows are confused.\n");
+        }
+    }
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -143,7 +202,11 @@ void engage_defenses() {
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        if (g_settings.cow_sync_active) {
+            printf("%s[COW SYNC: ACTIVE]%s Monitoring Polish cow cocaine laps...\n", YEL, RESET);
+        }
+        printf("\n");
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -159,8 +222,16 @@ void engage_defenses() {
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
 
-            printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
-            printf("ALERT: %s\n", threat);
+            if (g_settings.raw_alert_mode) {
+                printf("\n%s##################################################%s\n", alert_color, RESET);
+                printf("%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
+                printf("%sALERT: %s%s\n", alert_color, threat, RESET);
+                printf("%s##################################################%s\n", alert_color, RESET);
+            } else {
+                printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
+                printf("ALERT: %s\n", threat);
+            }
+
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
@@ -209,15 +280,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- STNM3K MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. READ HOLY SCROLLS\n");
+        printf("3. PILLOW FORT COMMAND CENTER\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "READ") != NULL) {
+            read_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "PILLOW") != NULL) {
+            pillow_fort_command_center();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are judging you.\n");
+        }
     }
 
     return 0;
