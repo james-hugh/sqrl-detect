@@ -1,0 +1,4 @@
+## 2026-03-22 - Insecure Default File Permissions and TOCTOU in System Initialization
+**Vulnerability:** The application was creating a log directory and log files with default permissions (based on a permissive umask like 0022), making them world-readable. Additionally, it used a `stat()` followed by `mkdir()` pattern, which is susceptible to Time-of-Check to Time-of-Use (TOCTOU) race conditions.
+**Learning:** For security-sensitive applications, relying on the environment's umask is risky. Direct directory creation with explicit error checking for `EEXIST` is more atomic and secure than checking for existence first.
+**Prevention:** Always set a restrictive `umask(0077)` at the start of the program to ensure all created files/directories are private by default. Use atomic operations like `mkdir` and check `errno` instead of pre-checking with `stat` or `access`.

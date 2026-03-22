@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,10 +38,17 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    /* Set restrictive umask: files 0600, directories 0700 */
+    umask(0077);
+
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    /* Securely create log directory, avoiding TOCTOU race conditions */
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to create log directory");
+            exit(1);
+        }
     }
 }
 
@@ -74,6 +82,10 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
+    /* Clamping level to [0, 100] for defense in depth */
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
+
     const char *color = GRN;
     const char *status = "SECURE";
     static const char bars_fill[] = "####################";
