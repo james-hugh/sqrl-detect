@@ -79,6 +79,9 @@ void print_threat_meter(int level) {
     static const char bars_fill[] = "####################";
     static const char bars_empty[] = "--------------------";
 
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
+
     if (level > 85) {
         color = RED;
         status = "CRITICAL";
@@ -88,7 +91,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %2d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -98,14 +101,18 @@ void print_threat_meter(int level) {
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
-        printf("%2d |", val);
+        int val = rand() % 21;
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%2d |%s", val, color);
         for (int j = 0; j < val; j++) {
             if (val > 15) printf("X");
             else if (val > 8) printf("*");
             else printf(".");
         }
-        printf("\n");
+        printf("%s\n", RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -142,7 +149,7 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
@@ -165,7 +172,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\n%sMonitoring... (Ctrl+C to retreat to your pillow fort)%s\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -178,6 +185,14 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+
+    printf("%s", YEL);
+    printf("  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\ | |  \\/  |___ /| |/ /\n");
+    printf(" \\___ \\ | | |  \\| | |\\/| | |_ \\| ' / \n");
+    printf("  ___) || | | |\\  | |  | |___) | . \\ \n");
+    printf(" |____/ |_| |_| \\_|_|  |_|____/|_|\\_\\\n");
+    printf("%s\n", RESET);
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
@@ -209,15 +224,21 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\nMain Menu:\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "EXIT") != NULL || strstr(command, "2") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
