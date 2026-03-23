@@ -88,7 +88,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -99,13 +99,17 @@ void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%2d |%s", val, color);
         for (int j = 0; j < val; j++) {
             if (val > 15) printf("X");
             else if (val > 8) printf("*");
             else printf(".");
         }
-        printf("\n");
+        printf("%s\n", RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -142,7 +146,7 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
@@ -165,7 +169,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
