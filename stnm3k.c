@@ -25,6 +25,10 @@
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
 
+/* --- GLOBAL STATE --- */
+int cow_metabolism = 1;
+int paranoid_mode = 0;
+
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
@@ -67,6 +71,36 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/**
+ * Reads and prints the holy scrolls (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nTHE HOLY SCROLLS ARE EMPTY OR MISSING. (No logs yet)\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n\n");
+    fclose(fp);
+}
+
+/**
+ * Optimizes cow metabolism via 'supplements'.
+ */
+void feed_cows() {
+    printf("\nFeeding the cows 5mg of high-grade Polish cocaine...\n");
+    printf("MOOOO! The cows are now running laps at 3 AM!\n");
+    cow_metabolism = 2;
+    paranoid_mode = 1;
+    log_event("COW METABOLISM OPTIMIZED. PARANOIA MODE ACTIVE.");
+}
+
 /* --- VISUALIZATION ENGINE --- */
 
 /**
@@ -74,6 +108,10 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
+    // Explicit clamping to [0, 100]
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
+
     const char *color = GRN;
     const char *status = "SECURE";
     static const char bars_fill[] = "####################";
@@ -143,9 +181,15 @@ void engage_defenses() {
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        if (paranoid_mode) {
+            printf("COW STATUS: %sCOCAINE-ENHANCED%s (LAPS AT 3 AM!)\n", RED, RESET);
+        }
+        printf("\n");
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int volatility = paranoid_mode ? 51 : 31;
+        int offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % volatility) - offset;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -162,12 +206,19 @@ void engage_defenses() {
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
-            printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            printf("Fungal Network Messaging: Encrypting alert");
+            for (int k = 0; k < 3; k++) {
+                printf(".");
+                fflush(stdout);
+                usleep(200000);
+            }
+            printf(" SENT TO PILLOW FORT.\n");
         }
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
         fflush(stdout);
-        sleep(1);
+        usleep(1000000 / cow_metabolism);
     }
 }
 
@@ -209,15 +260,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS (LOGS)\n");
+        printf("3. FEED COWS (OPTIMIZE METABOLISM)\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE DEFENSES") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "VIEW HOLY SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "FEED COWS") != NULL) {
+            feed_cows();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("The Polish cows do not understand your strange glyphs.\n");
+        }
     }
 
     return 0;
