@@ -1,0 +1,4 @@
+## 2026-03-22 - TOCTOU and Insecure Default File Permissions
+**Vulnerability:** A Time-of-Check to Time-of-Use (TOCTOU) race condition was present in `init_system` where `stat` was used to check for the existence of the `logs/` directory before calling `mkdir`. Additionally, the application lacked a restrictive `umask`, leading to log files being created with overly permissive default permissions (e.g., `664`).
+**Learning:** Checking for file existence before creation is inherently racy and can be exploited to redirect operations or cause unexpected behavior. Relying on default system `umask` settings can lead to sensitive data (like logs) being readable by other users on the system.
+**Prevention:** Use atomic operations like calling `mkdir` directly and checking for `EEXIST` via `errno`. Set a restrictive `umask` (e.g., `0077`) early in the process initialization to ensure all subsequently created files and directories have secure default permissions.
