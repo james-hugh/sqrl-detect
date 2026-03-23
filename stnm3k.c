@@ -29,6 +29,10 @@
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
+#define BLU "\x1B[34m"
+#define MAG "\x1B[35m"
+#define CYN "\x1B[36m"
+#define WHT "\x1B[37m"
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
@@ -70,6 +74,20 @@ void log_event(const char *event) {
 /* --- VISUALIZATION ENGINE --- */
 
 /**
+ * Prints the stylized STNM3K banner.
+ */
+void print_banner() {
+    printf("%s", YEL);
+    printf("  ____  _______ _   _ __  __  ____  _  __\n");
+    printf(" / ___||_   _| \\ | |  \\/  ||___ \\| |/ /\n");
+    printf(" \\___ \\  | | |  \\| | |\\/| |  __) | ' / \n");
+    printf("  ___) | | | | |\\  | |  | | / __/| . \\ \n");
+    printf(" |____/  |_| |_| \\_|_|  |_||_____|_|\\_\\\n");
+    printf("   SQUIRREL TERMINATOR NETWORK MONITOR\n");
+    printf("%s\n", RESET);
+}
+
+/**
  * Renders the squirrel threat meter.
  * @param level Threat level from 0 to 100.
  */
@@ -88,32 +106,38 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
-           color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
+    printf("SQUIRREL THREAT METER: %s%-8s%s [%.*s%.*s] %s%3d%%%s\n",
+           color, status, RESET, bars, bars_fill, METER_WIDTH - bars, bars_empty, CYN, level, RESET);
 }
 
 /**
- * Renders the GUI graph of chaos.
+ * Renders the GUI graph of chaos for network volatility visualization.
  */
 void print_graph_of_chaos() {
-    printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    printf("%sGUI GRAPH OF CHAOS (Network Volatility):%s\n", MAG, RESET);
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%s%2d |%s", WHT, val, RESET);
+        printf("%s", color);
         for (int j = 0; j < val; j++) {
             if (val > 15) printf("X");
             else if (val > 8) printf("*");
             else printf(".");
         }
-        printf("\n");
+        printf("%s\n", RESET);
     }
-    printf("   +-------------------- (Acorns/sec)\n");
+    printf("   %s+-------------------- (Acorns/sec)%s\n", WHT, RESET);
 }
 
 /* --- CORE ENGINE LOGIC --- */
 
 /**
  * Returns a random threat message for the paranoid user.
+ * @return A string containing a random threat description.
  */
 const char* get_random_threat() {
     const char* threats[] = {
@@ -130,20 +154,21 @@ const char* get_random_threat() {
 }
 
 /**
- * Enters the main monitoring loop.
+ * Enters the main monitoring loop to track network threats in real-time.
  */
 void engage_defenses() {
-    printf("\n--- ENGAGING DEFENSES ---\n");
-    printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("\n--- %sENGAGING DEFENSES%s ---\n", RED, RESET);
+    printf("%sGLORY BE! GLORY BE! GLORY BE!%s\n", YEL, RESET);
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
+        printf("%sPLATFORM: %s%s%s\n\n", WHT, BLU, PLATFORM, RESET);
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -165,7 +190,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\n%sMonitoring... (Ctrl+C to retreat to your pillow fort)%s\n", CYN, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -179,11 +204,12 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    print_banner();
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
-    printf("Recite \"GLORY BE\" three times to proceed.\n");
+    printf("Recite %s\"GLORY BE\"%s three times to proceed.\n", YEL, RESET);
 
     while (prayer_count < 3) {
-        printf("(%d/3) > ", prayer_count + 1);
+        printf("%s(%d/3)%s > ", CYN, prayer_count + 1, RESET);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
@@ -201,6 +227,10 @@ int authenticate_user() {
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main entrance of the STNM3K application.
+ * @return Exit status code.
+ */
 int main() {
     init_system();
 
@@ -209,15 +239,21 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("%s1. ENGAGE DEFENSES%s\n", GRN, RESET);
+        printf("%s2. EXIT (COWARDLY)%s\n", RED, RESET);
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("%sInvalid choice, Sentinel. The Google Machine is mocking your hesitation.%s\n", MAG, RESET);
+        }
     }
 
     return 0;
