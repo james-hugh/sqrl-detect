@@ -1,0 +1,6 @@
+STNM3K
+bench_graph
+bench_graph_io
+bench_graph_logic
+logs/
+*.log
