@@ -37,6 +37,7 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -74,6 +75,9 @@ void log_event(const char *event) {
  * @param level Threat level from 0 to 100.
  */
 void print_threat_meter(int level) {
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
+
     const char *color = GRN;
     const char *status = "SECURE";
     static const char bars_fill[] = "####################";
