@@ -31,6 +31,9 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL STATE --- */
+int paranoid_mode = 0;
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -65,6 +68,26 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n--- THE HOLY SCROLLS ARE EMPTY OR MISSING ---\n");
+        printf("The squirrels may have eaten them, or you haven't engaged defenses yet.\n");
+        return;
+    }
+
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -131,6 +154,7 @@ const char* get_random_threat() {
 
 /**
  * Enters the main monitoring loop.
+ * Runs for a set number of cycles before returning to the main menu.
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
@@ -138,14 +162,21 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    int alerts_this_session = 0;
+    int cycles = 10;
+
+    for (int i = 0; i < cycles; i++) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("MODE: %s\n\n", paranoid_mode ? "PARANOID" : "STANDARD");
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int range = paranoid_mode ? 51 : 31;
+        int offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % range) - offset;
+
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -155,6 +186,7 @@ void engage_defenses() {
         print_graph_of_chaos();
 
         if (threat_level > 70) {
+            alerts_this_session++;
             const char* threat = get_random_threat();
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
@@ -165,10 +197,13 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nALERTS IN THIS SESSION: %d\n", alerts_this_session);
+        printf("Monitoring cycle %d/%d... (Stay vigilant!)\n", i + 1, cycles);
         fflush(stdout);
         sleep(1);
     }
+    printf("\nMonitoring session complete. Returning to Command Center.\n");
+    sleep(2);
 }
 
 /**
@@ -209,15 +244,33 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (running) {
+        printf("\n--- MAIN COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. TOGGLE PARANOID MODE (Current: %s)\n", paranoid_mode ? "ON" : "OFF");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || strcasecmp(command, "ENGAGE DEFENSES\n") == 0) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strcasecmp(command, "VIEW HOLY SCROLLS\n") == 0) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strcasecmp(command, "TOGGLE PARANOID MODE\n") == 0) {
+            paranoid_mode = !paranoid_mode;
+            printf("Paranoid mode %s. The cows are %s.\n",
+                   paranoid_mode ? "ENABLED" : "DISABLED",
+                   paranoid_mode ? "REALLY RUNNING NOW" : "CALMING DOWN");
+        } else if (strstr(command, "4") != NULL || strcasecmp(command, "EXIT\n") == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("UNKNOWN COMMAND. The Google Machine is confused.\n");
+        }
     }
 
     return 0;
