@@ -179,6 +179,14 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    printf("%s", YEL);
+    printf("  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\ | |  \\/  |___ /| |/ /\n");
+    printf(" \\___ \\ | | |  \\| | |\\/| | |_ \\| ' / \n");
+    printf("  ___) || | | |\\  | |  | |___) | . \\ \n");
+    printf(" |____/ |_| |_| \\_|_|  |_|____/|_|\\_\\\n");
+    printf("%s", RESET);
+
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -189,13 +197,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
-            printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf("%s\nINCORRECT PRAYER.\n", RED);
+            printf("The Polish cows are disappointed and the Google Machine is laughing at you.%s\n", RESET);
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("%s\nAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -211,7 +219,7 @@ int main() {
     char command[100];
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf("STNM3K > ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
