@@ -1,0 +1,3 @@
+## 2026-03-24 - Bulk character output overhead
+**Learning:** Character-by-character output (e.g., calling `printf` or `putchar` inside a loop for every character) introduces significant overhead in I/O-bound loops. Replacing these loops with bulk writing techniques—such as `fwrite` with a buffer or utilizing the `%.*s` format specifier with a static filler string—can drastically reduce execution time.
+**Action:** When a loop's primary purpose is to print a repeated character a variable number of times, prioritize bulk output using `%.*s` with a static string. This approach is more performant and maintains code readability better than manual character loops or dynamic buffer management.
