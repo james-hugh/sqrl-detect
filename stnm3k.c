@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,11 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL SETTINGS --- */
+int cow_metabolism = 5;
+int paranoid_mode = 0;
+int fortification_level = 50;
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +44,12 @@
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+            perror("Failed to create logs directory");
+        }
     }
 }
 
@@ -88,7 +97,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -96,16 +105,15 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char bars_fill[] = "XXXXXXXXXXXXXXXXXXXX";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%2d |%s%.*s%s\n", val, color, val, bars_fill, RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -130,22 +138,47 @@ const char* get_random_threat() {
 }
 
 /**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. Perhaps the squirrels ate them.\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+}
+
+/**
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
+    int session_alerts = 0;
     while (1) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("FORTIFICATION LEVEL: %d%%\n", fortification_level);
+        printf("SESSION ALERTS: %d\n\n", session_alerts);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int volatility = paranoid_mode ? 51 : 31;
+        int offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % volatility) - offset;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -162,12 +195,13 @@ void engage_defenses() {
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
+            session_alerts++;
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... %s(Ctrl+C to retreat to your pillow fort)%s\n", YEL, RESET);
         fflush(stdout);
-        sleep(1);
+        usleep(1000000 / cow_metabolism);
     }
 }
 
@@ -179,6 +213,13 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    printf("%s", YEL);
+    printf("  ____  _______ _   _ __  __ ____  _  __\n");
+    printf(" / ___||_   _| \\ | |  \\/  |___ \\| |/ /\n");
+    printf(" \\___ \\  | | |  \\| | |\\/| | __) | ' / \n");
+    printf("  ___) | | | | |\\  | |  | |/ __/| . \\ \n");
+    printf(" |____/  |_| |_| \\_|_|  |_|_____|_|\\_\\\n");
+    printf("%s", RESET);
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -199,6 +240,40 @@ int authenticate_user() {
     return 1;
 }
 
+/**
+ * Configuration menu for the Sentinel.
+ */
+void configure_system() {
+    char command[100];
+    while (1) {
+        printf("\n--- SYSTEM CONFIGURATION ---\n");
+        printf("1. Toggle Paranoid Mode (Current: %s)\n", paranoid_mode ? "ON" : "OFF");
+        printf("2. Adjust Cow Metabolism (Current: %d)\n", cow_metabolism);
+        printf("3. Back to Main Menu\n");
+        printf("STNM3K > ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) return;
+
+        if (strstr(command, "1") != NULL) {
+            paranoid_mode = !paranoid_mode;
+            printf("Paranoid Mode is now %s.\n", paranoid_mode ? "ON" : "OFF");
+        } else if (strstr(command, "2") != NULL) {
+            printf("Enter new Cow Metabolism (1-10): ");
+            if (fgets(command, sizeof(command), stdin) != NULL) {
+                int val = atoi(command);
+                if (val >= 1 && val <= 10) {
+                    cow_metabolism = val;
+                    printf("Cow Metabolism set to %d.\n", cow_metabolism);
+                } else {
+                    printf("Invalid input. Polish cows require stability.\n");
+                }
+            }
+        } else if (strstr(command, "3") != NULL) {
+            break;
+        }
+    }
+}
+
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
@@ -209,15 +284,31 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. CONFIGURE SYSTEM\n");
+        printf("4. FORTIFY PILLOW FORT\n");
+        printf("5. EXIT (COWARDLY)\n");
+        printf("STNM3K > ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL) {
+            configure_system();
+        } else if (strstr(command, "4") != NULL) {
+            fortification_level += 5;
+            if (fortification_level > 100) fortification_level = 100;
+            printf("Fortification level increased to %d%%. Your pillow fort is stronger than ever.\n", fortification_level);
+        } else if (strstr(command, "5") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
