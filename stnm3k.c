@@ -38,6 +38,7 @@
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
@@ -86,6 +87,9 @@ void print_threat_meter(int level) {
         color = YEL;
         status = "CAUTION";
     }
+
+    if (level < 0) level = 0;
+    if (level > 100) level = 100;
 
     int bars = (level * METER_WIDTH) / 100;
     printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
