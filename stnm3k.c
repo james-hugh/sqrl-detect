@@ -88,7 +88,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -138,11 +138,12 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
+    int session_alerts = 0;
     while (1) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
@@ -151,10 +152,12 @@ void engage_defenses() {
         if (threat_level > 100) threat_level = 100;
 
         print_threat_meter(threat_level);
+        printf("SESSION ALERTS: %d\n", session_alerts);
         printf("\n");
         print_graph_of_chaos();
 
         if (threat_level > 70) {
+            session_alerts++;
             const char* threat = get_random_threat();
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
@@ -165,7 +168,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%sCtrl+C%s to retreat to your pillow fort)\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -178,6 +181,14 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+
+    printf("%s", YEL);
+    printf("  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\ | |  \\/  |___ /| |/ /\n");
+    printf(" \\___ \\ | | |  \\| | |\\/| | |_ \\| ' / \n");
+    printf("  ___) || | | |\\  | |  | |___) | . \\ \n");
+    printf(" |____/ |_| |_| \\_|_|  |_|____/|_|\\_\\\n");
+    printf("%s\n", RESET);
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
