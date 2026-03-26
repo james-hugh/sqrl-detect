@@ -55,15 +55,28 @@ void log_event(const char *event) {
         return;
     }
 
+    /* Bolt: Cache timestamp to avoid expensive ctime() calls during high-frequency bursts */
+    static time_t last_time = 0;
+    static char last_timestamp[32] = {0};
     time_t now = time(NULL);
-    char *timestamp = ctime(&now);
-    if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
-    } else {
-        timestamp = "UNKNOWN TIME";
+
+    if (now != last_time) {
+        char *timestamp = ctime(&now);
+        if (timestamp) {
+            strncpy(last_timestamp, timestamp, sizeof(last_timestamp) - 1);
+            last_timestamp[sizeof(last_timestamp) - 1] = '\0';
+            size_t len = strlen(last_timestamp);
+            if (len > 0 && last_timestamp[len - 1] == '\n') {
+                last_timestamp[len - 1] = '\0';
+            }
+        } else {
+            strncpy(last_timestamp, "UNKNOWN TIME", sizeof(last_timestamp) - 1);
+            last_timestamp[sizeof(last_timestamp) - 1] = '\0';
+        }
+        last_time = now;
     }
 
-    fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
+    fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", last_timestamp, event);
     fclose(fp);
 }
 
