@@ -96,16 +96,20 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
-    printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    printf("GUI GRAPH OF CHAOS [X:Crit *:Med .:Low]\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
+        const char *color = GRN;
+        if (val > 15) color = RED;
+        else if (val > 8) color = YEL;
+
+        printf("%2d |%s", val, color);
         for (int j = 0; j < val; j++) {
             if (val > 15) printf("X");
             else if (val > 8) printf("*");
             else printf(".");
         }
-        printf("\n");
+        printf("%s\n", RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -136,13 +140,14 @@ void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("%s🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s%s\n", YEL, VERSION, RESET);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
         int change = (rand() % 31) - 15; // -15 to +15
@@ -165,7 +170,7 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\n%sMonitoring... (Ctrl+C to retreat to your pillow fort)%s\n", YEL, RESET);
         fflush(stdout);
         sleep(1);
     }
@@ -179,6 +184,13 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    printf("%s", YEL);
+    printf("  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\ | |  \\/  |___ /| |/ /\n");
+    printf(" \\___ \\ | | |  \\| | |\\/| | |_ \\| ' / \n");
+    printf("  ___) || | | |\\  | |  | |___) | . \\ \n");
+    printf(" |____/ |_| |_| \\_|_|  |_|____/|_|\\_\\\n");
+    printf("%s", RESET);
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -188,14 +200,15 @@ int authenticate_user() {
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%sPrayer accepted.%s\n", GRN, RESET);
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%sINCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
