@@ -35,9 +35,11 @@
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Sets restrictive umask to ensure secure file permissions.
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
@@ -88,7 +90,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -96,16 +98,25 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char filler_x[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char filler_star[] = "********************";
+    static const char filler_dot[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+        int val = rand() % 21; // 0 to 20
+        const char *color = GRN;
+        const char *filler = filler_dot;
+
+        if (val > 15) {
+            color = RED;
+            filler = filler_x;
+        } else if (val > 8) {
+            color = YEL;
+            filler = filler_star;
         }
-        printf("\n");
+
+        printf("%2d |%s%.*s%s\n", val, color, val, filler, RESET);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -133,6 +144,7 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
+    sleep(1);
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
@@ -179,6 +191,14 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    printf("%s", YEL);
+    printf("  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\\\ | |  \\\\/  |___ /| |/ /\n");
+    printf(" \\\\___ \\\\ | | |  \\\\| | |\\\\/| | |_ \\\\| ' / \n");
+    printf("  ___) || | | |\\\\  | |  | |___) | . \\\\ \n");
+    printf(" |____/ |_| |_| \\\\_|_|  |_|____/|_|\\\\_\\\\\n");
+    printf("%s\n", RESET);
+
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -211,7 +231,7 @@ int main() {
     char command[100];
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf("STNM3K > ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
