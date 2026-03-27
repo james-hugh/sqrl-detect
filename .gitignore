@@ -1,0 +1,9 @@
+# Binaries
+STNM3K
+benchmarks/bench_graph
+benchmarks/bench_graph_optimized
+benchmarks/bench_graph_original
+benchmarks/verify_output
+
+# Logs
+logs/
