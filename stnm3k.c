@@ -96,16 +96,23 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char crit_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char med_fill[]  = "********************";
+    static const char low_fill[]  = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+
+        /* Optimized: Use bulk output to reduce system calls and logic overhead */
+        if (val > 15) {
+            printf("%.*s\n", val, crit_fill);
+        } else if (val > 8) {
+            printf("%.*s\n", val, med_fill);
+        } else {
+            printf("%.*s\n", val, low_fill);
         }
-        printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
