@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +35,21 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
- * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Initializes the system by seeding the RNG and ensuring the log directory exists
+ * with restrictive permissions.
+ *
+ * @return None.
  */
 void init_system() {
+    // Set restrictive umask to ensure all created files/dirs are owner-only by default.
+    umask(0077);
+
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
