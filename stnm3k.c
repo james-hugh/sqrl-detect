@@ -17,6 +17,13 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <termios.h>
+#include <fcntl.h>
+
+/* --- GLOBAL STATE --- */
+int cow_metabolism = 1;
+int paranoid_mode = 0;
 
 /* --- CONFIGURATION MACROS --- */
 #define VERSION "0.69"
@@ -34,13 +41,45 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Checks for keyboard input in a non-blocking manner.
+ * @return 1 if a key was pressed, 0 otherwise.
+ */
+int kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
     srand(time(NULL));
+    umask(0077);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
@@ -88,7 +127,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -96,14 +135,20 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char fills[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char stars[] = "********************";
+    static const char dots[]  = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+        if (val > 15) {
+            printf("%.*s", val, fills);
+        } else if (val > 8) {
+            printf("%.*s", val, stars);
+        } else {
+            printf("%.*s", val, dots);
         }
         printf("\n");
     }
@@ -113,7 +158,45 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Displays the contents of the holy scrolls.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nNo holy scrolls found. Your history is as clean as a Polish cow's conscience.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
+    fclose(fp);
+
+    printf("\nPress Enter to return to the fort...");
+    getchar();
+}
+
+/**
+ * Displays the current system status and security parameters.
+ */
+void view_system_status() {
+    printf("\n--- STNM3K SYSTEM STATUS ---\n");
+    printf("VERSION:      %s\n", VERSION);
+    printf("PLATFORM:     %s\n", PLATFORM);
+    printf("COW METABOLISM: %d\n", cow_metabolism);
+    printf("PARANOID MODE:  %s\n", paranoid_mode ? "ENABLED (MAXIMUM VIGILANCE)" : "DISABLED");
+    printf("LOG FILE:     %s\n", LOG_FILE);
+    printf("----------------------------\n");
+    printf("\nPress Enter to return to the fort...");
+    getchar();
+}
+
+/**
  * Returns a random threat message for the paranoid user.
+ * @return A string representing a random squirrel-related threat.
  */
 const char* get_random_threat() {
     const char* threats[] = {
@@ -136,6 +219,7 @@ void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1); // Give user a moment to see the glory
 
     int threat_level = 10;
     while (1) {
@@ -145,7 +229,13 @@ void engage_defenses() {
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int change;
+        if (paranoid_mode) {
+            change = (rand() % 51) - 25; // -25 to +25 in paranoid mode
+        } else {
+            change = (rand() % 31) - 15; // -15 to +15 normally
+        }
+
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -165,9 +255,20 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (Press 'q' to retreat to your pillow fort)\n");
         fflush(stdout);
-        sleep(1);
+
+        // Non-blocking exit check
+        if (kbhit()) {
+            int ch = getchar();
+            if (ch == 'q' || ch == 'Q') {
+                printf("Retreating to pillow fort...\n");
+                sleep(1);
+                break;
+            }
+        }
+
+        usleep(1000000 / cow_metabolism);
     }
 }
 
@@ -201,6 +302,10 @@ int authenticate_user() {
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main application entry point.
+ * @return 0 on success, 1 on failure.
+ */
 int main() {
     init_system();
 
@@ -209,15 +314,34 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (running) {
+        printf("\n--- STNM3K MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS (LOGS)\n");
+        printf("3. SYSTEM STATUS\n");
+        printf("4. TOGGLE PARANOID MODE (%s)\n", paranoid_mode ? "ON" : "OFF");
+        printf("5. EXIT (COWARDLY)\n");
+        printf("STNM3K > ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL) {
+            view_system_status();
+        } else if (strstr(command, "4") != NULL) {
+            paranoid_mode = !paranoid_mode;
+            printf("Paranoid Mode: %s\n", paranoid_mode ? "MAXIMUM VIGILANCE ENGAGED." : "NORMAL MODE.");
+        } else if (strstr(command, "5") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("INVALID COMMAND. The Google Machine is laughing at you.\n");
+        }
     }
 
     return 0;
