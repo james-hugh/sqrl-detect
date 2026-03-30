@@ -14,6 +14,9 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <termios.h>
+#include <fcntl.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,16 +34,114 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL STATE --- */
+int paranoid_mode = 0;
+int cow_metabolism = 1;
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
+    }
+}
+
+/**
+ * Non-blocking check for keyboard input.
+ * @return 1 if a key was pressed, 0 otherwise.
+ */
+int kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * Gets a single character from stdin without echoing.
+ * @return The character read.
+ */
+int getch() {
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+/**
+ * Displays the contents of the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nTHE HOLY SCROLLS ARE EMPTY OR MISSING. THE SQUIRRELS ARE WINNING.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+}
+
+/**
+ * Configuration sub-menu for the Polish cows.
+ */
+void configure_cows() {
+    char input[50];
+    printf("\n--- CONFIGURE COWS ---\n");
+    printf("1. TOGGLE PARANOID MODE (Current: %s)\n", paranoid_mode ? "ON" : "OFF");
+    printf("2. SET COW METABOLISM (Current: %d)\n", cow_metabolism);
+    printf("3. BACK TO MAIN MENU\n");
+    printf("STNM3K > ");
+
+    if (fgets(input, sizeof(input), stdin) == NULL) return;
+
+    if (input[0] == '1') {
+        paranoid_mode = !paranoid_mode;
+        printf("PARANOID MODE IS NOW %s.\n", paranoid_mode ? "ON" : "OFF");
+    } else if (input[0] == '2') {
+        printf("Enter new metabolism rate: ");
+        if (fgets(input, sizeof(input), stdin)) {
+            int rate = atoi(input);
+            if (rate > 0) {
+                cow_metabolism = rate;
+                printf("COW METABOLISM SET TO %d.\n", cow_metabolism);
+            } else {
+                printf("INVALID METABOLISM RATE. THE COWS REFUSE.\n");
+            }
+        }
     }
 }
 
@@ -139,13 +240,23 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
+        if (kbhit()) {
+            if (getch() == 'q') {
+                printf("\nRETREATING TO PILLOW FORT... GLORY BE!\n");
+                log_event("DEFENSES DISENGAGED. COWARDICE OR TACTICAL REPOSITIONING?");
+                break;
+            }
+        }
+
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int volatility = paranoid_mode ? 51 : 31;
+        int offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % volatility) - offset;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -165,9 +276,9 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (Press 'q' to retreat to your pillow fort)\n");
         fflush(stdout);
-        sleep(1);
+        usleep(1000000 / cow_metabolism);
     }
 }
 
@@ -209,15 +320,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
+    while (running) {
+        printf("\n--- STNM3K MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. CONFIGURE COWS\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("STNM3K > ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE DEFENSES") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "VIEW HOLY SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || strstr(command, "CONFIGURE COWS") != NULL) {
+            configure_cows();
+        } else if (strstr(command, "4") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("INVALID COMMAND. THE COWS ARE CONFUSED.\n");
+        }
     }
 
     return 0;
