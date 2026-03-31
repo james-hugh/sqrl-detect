@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +39,10 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    // Set restrictive umask so all created files/dirs are owner-only
+    umask(0077);
+    if (mkdir(LOG_DIR, 0777) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
