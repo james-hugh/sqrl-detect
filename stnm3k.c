@@ -14,9 +14,17 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+/* --- GLOBAL STATE --- */
+int cow_metabolism = 1;
+int paranoid_mode = 0;
 
 /* --- CONFIGURATION MACROS --- */
 #define VERSION "0.69"
@@ -34,13 +42,31 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Signal handler to restore terminal state upon interruption.
+ */
+void handle_signal(int sig) {
+    (void)sig;
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag |= (ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+    printf("\nRetreating to the pillow fort safely (SIGINT received)...\n");
+    exit(0);
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Sets restrictive umask for secure file creation and sets up signal handlers.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
+    signal(SIGINT, handle_signal);
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
@@ -67,6 +93,66 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/* --- UTILITY FUNCTIONS --- */
+
+/**
+ * Displays the persistent logs from the holy scrolls.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n[ERROR] The holy scrolls are empty or missing. The cows are confused.\n");
+        return;
+    }
+
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
+    fclose(fp);
+
+    printf("\nPress Enter to return to the command center...");
+    getchar(); // Clear previous newline if any
+    getchar();
+}
+
+/**
+ * Interactive sub-menu to configure cow parameters and paranoia.
+ */
+void configure_cows() {
+    char input[50];
+    while (1) {
+        printf("\n--- COW CONFIGURATION ---\n");
+        printf("1. Cow Metabolism: %d laps/sec\n", cow_metabolism);
+        printf("2. Paranoid Mode: %s\n", paranoid_mode ? "ENABLED (GLORY BE)" : "DISABLED");
+        printf("3. Return to Main Menu\n");
+        printf("> ");
+
+        if (fgets(input, sizeof(input), stdin) == NULL) break;
+
+        int choice = atoi(input);
+        if (choice == 1) {
+            printf("Enter new metabolism rate (1-10): ");
+            if (fgets(input, sizeof(input), stdin) != NULL) {
+                int rate = atoi(input);
+                if (rate >= 1 && rate <= 10) {
+                    cow_metabolism = rate;
+                    printf("Metabolism synchronized. The cows are now running at %d laps/sec.\n", rate);
+                } else {
+                    printf("Invalid rate. The cows refuse to cooperate.\n");
+                }
+            }
+        } else if (choice == 2) {
+            paranoid_mode = !paranoid_mode;
+            printf("Paranoid Mode %s.\n", paranoid_mode ? "ENGAGED" : "DISENGAGED");
+        } else if (choice == 3) {
+            break;
+        }
+    }
+}
+
 /* --- VISUALIZATION ENGINE --- */
 
 /**
@@ -88,7 +174,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -130,7 +216,37 @@ const char* get_random_threat() {
 }
 
 /**
+ * Non-blocking keyboard hit utility.
+ * Returns 1 if a key was pressed, 0 otherwise.
+ */
+int kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
  * Enters the main monitoring loop.
+ * Logic is influenced by cow_metabolism and paranoid_mode.
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
@@ -145,7 +261,11 @@ void engage_defenses() {
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        // Volatility depends on paranoid mode
+        int change_range = paranoid_mode ? 51 : 31;
+        int change_offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % change_range) - change_offset;
+
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -165,10 +285,17 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... Press 'q' to retreat to your pillow fort.\n");
         fflush(stdout);
-        sleep(1);
+
+        if (kbhit()) {
+            if (getchar() == 'q') break;
+        }
+
+        // Sleep depends on cow metabolism
+        usleep(1000000 / cow_metabolism);
     }
+    printf("\nDefense cycle terminated safely. The Polish cows are resting.\n");
 }
 
 /**
@@ -209,15 +336,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS (Logs)\n");
+        printf("3. CONFIGURE COWS\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("STNM3K > ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        int choice = atoi(command);
+        if (choice == 1) {
+            engage_defenses();
+        } else if (choice == 2) {
+            view_holy_scrolls();
+        } else if (choice == 3) {
+            configure_cows();
+        } else if (choice == 4) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
