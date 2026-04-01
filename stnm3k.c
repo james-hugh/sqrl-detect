@@ -14,6 +14,11 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/select.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,16 +36,73 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- GLOBAL STATE --- */
+int cow_metabolism = 1;
+int paranoid_mode = 0;
+struct termios orig_termios;
+
+/* --- TERMINAL AND INPUT UTILITIES --- */
+
+/**
+ * Restores terminal to its original state.
+ */
+void restore_terminal() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+/**
+ * Disables canonical mode and echoing for the terminal.
+ */
+void setup_terminal() {
+    static int first_call = 1;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    if (first_call) {
+        atexit(restore_terminal);
+        first_call = 0;
+    }
+
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+/**
+ * Signal handler for SIGINT (Ctrl+C).
+ */
+void handle_signal(int sig) {
+    (void)sig;
+    restore_terminal();
+    const char msg[] = "\nEmergency retreat to pillow fort! Glory Be!\n";
+    if (write(STDOUT_FILENO, msg, sizeof(msg) - 1)) {};
+    _exit(0);
+}
+
+/**
+ * Detects if a key has been pressed (non-blocking).
+ * @return 1 if key pressed, 0 otherwise.
+ */
+int kbhit() {
+    struct timeval tv = {0L, 0L};
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    return select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+}
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+        if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+            perror("Failed to create log directory");
+            exit(1);
+        }
     }
 }
 
@@ -65,6 +127,29 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Displays the contents of the holy scrolls.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty. The squirrels have stolen our history.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("\n[Press Enter to return to menu]");
+    fflush(stdout);
+    int c;
+    // Clear buffer and wait for Enter
+    while ((c = getchar()) != '\n' && c != EOF);
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -113,6 +198,41 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Configures global state variables.
+ */
+void configure_cows() {
+    char input[50];
+    int choice = 0;
+
+    while (choice != 3) {
+        printf("\n--- CONFIGURE COWS ---\n");
+        printf("1. Toggle Paranoid Mode (Current: %s)\n", paranoid_mode ? "ENABLED" : "DISABLED");
+        printf("2. Set Cow Metabolism (Current: %d)\n", cow_metabolism);
+        printf("3. Return to Main Menu\n");
+        printf("Choice > ");
+
+        if (fgets(input, sizeof(input), stdin) == NULL) break;
+        choice = atoi(input);
+
+        if (choice == 1) {
+            paranoid_mode = !paranoid_mode;
+            printf("Paranoid Mode set to %s.\n", paranoid_mode ? "ENABLED" : "DISABLED");
+        } else if (choice == 2) {
+            printf("Enter new metabolism value (1-10) > ");
+            if (fgets(input, sizeof(input), stdin) != NULL) {
+                int val = atoi(input);
+                if (val >= 1 && val <= 10) {
+                    cow_metabolism = val;
+                    printf("Cow metabolism updated to %d.\n", cow_metabolism);
+                } else {
+                    printf("Invalid value. Cows need a metabolism between 1 and 10.\n");
+                }
+            }
+        }
+    }
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
@@ -133,6 +253,9 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
+    setup_terminal();
+    signal(SIGINT, handle_signal);
+
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
@@ -145,7 +268,9 @@ void engage_defenses() {
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int volatility = paranoid_mode ? 51 : 31;
+        int offset = paranoid_mode ? 25 : 15;
+        int change = (rand() % volatility) - offset;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -165,10 +290,19 @@ void engage_defenses() {
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring at %dx metabolism... (Press 'q' to retreat to your pillow fort)\n", cow_metabolism);
         fflush(stdout);
-        sleep(1);
+
+        if (kbhit()) {
+            char c;
+            if (read(STDIN_FILENO, &c, 1) > 0 && c == 'q') {
+                break;
+            }
+        }
+        usleep(1000000 / cow_metabolism);
     }
+    restore_terminal();
+    signal(SIGINT, SIG_DFL);
 }
 
 /**
@@ -209,15 +343,36 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int choice = 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (choice != 4) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. CONFIGURE COWS\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("STNM3K > ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+        choice = atoi(command);
+
+        switch (choice) {
+            case 1:
+                engage_defenses();
+                break;
+            case 2:
+                view_holy_scrolls();
+                break;
+            case 3:
+                configure_cows();
+                break;
+            case 4:
+                printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+                break;
+            default:
+                printf("Invalid command. The Polish cows are confused.\n");
+                break;
+        }
     }
 
     return 0;
