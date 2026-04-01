@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +35,28 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Renders the themed ASCII banner.
+ */
+void print_banner() {
+    printf(YEL "  ____ _____ _   _ __  __ _____ _  __\n");
+    printf(" / ___|_   _| \\ | |  \\/  |___ /| |/ /\n");
+    printf(" \\___ \\ | | |  \\| | |\\/| | |_ \\| ' / \n");
+    printf("  ___) || | | |\\  | |  | |___) | . \\ \n");
+    printf(" |____/ |_| |_| \\_|_|  |_|____/|_|\\_\\\n" RESET);
+    printf("   SQUIRREL TERMINATOR NETWORK MONITOR\n\n");
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Sets a restrictive umask for secure log file creation.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -88,24 +104,27 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
 /**
  * Renders the GUI graph of chaos.
+ * Optimized to use bulk output for reduced system call overhead.
  */
 void print_graph_of_chaos() {
+    static const char x_bars[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_bars[] = "********************";
+    static const char dot_bars[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
-    for (int i = 5; i > 0; i--) {
+    for (int i = 0; i < 5; i++) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *bars = dot_bars;
+        if (val > 15) bars = x_bars;
+        else if (val > 8) bars = star_bars;
+
+        printf("%2d |%.*s\n", val, val, bars);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -142,8 +161,10 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("======================================================================\n");
+        printf("  🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
+        printf("  PLATFORM: %s\n", PLATFORM);
+        printf("======================================================================\n\n");
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -179,6 +200,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    print_banner();
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -211,7 +233,7 @@ int main() {
     char command[100];
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf("STNM3K > ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
