@@ -70,6 +70,18 @@ void log_event(const char *event) {
 /* --- VISUALIZATION ENGINE --- */
 
 /**
+ * Displays a themed ASCII banner.
+ */
+void print_banner() {
+    printf("  ____ _______ _   _ __  __ ____  _  __\n");
+    printf(" / ___|__   __| \\ | |  \\/  |___ \\| |/ /\n");
+    printf(" \\___ \\  | |  |  \\| | |\\/| | ___) | ' / \n");
+    printf("  ___) | | |  | |\\  | |  | |/ __/| . \\ \n");
+    printf(" |____/  |_|  |_| \\_|_|  |_|_____|_|\\_\\\n");
+    printf("   SQUIRREL TERMINATOR NETWORK MONITOR\n\n");
+}
+
+/**
  * Renders the squirrel threat meter.
  * @param level Threat level from 0 to 100.
  */
@@ -88,7 +100,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -142,8 +154,10 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
+        printf("======================================================================\n");
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("======================================================================\n\n");
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -179,6 +193,7 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
+    print_banner();
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
@@ -209,8 +224,9 @@ int main() {
     }
 
     char command[100];
+    printf("\n--- MAIN MENU ---\n");
     printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("2. EXIT (COWARDLY)\n\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
