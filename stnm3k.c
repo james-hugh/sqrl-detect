@@ -67,7 +67,62 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/**
+ * Reads and prints the holy scrolls (logs).
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty. No sightings of squirrels... yet.\n");
+        return;
+    }
+
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
+    fclose(fp);
+}
+
+/**
+ * Clears the holy scrolls (logs).
+ */
+void sanctify_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "w");
+    if (fp == NULL) {
+        perror("Failed to sanctify scrolls");
+        return;
+    }
+    fclose(fp);
+    printf("\nThe scrolls have been sanctified. The records are pure once more.\n");
+}
+
 /* --- VISUALIZATION ENGINE --- */
+
+/**
+ * Renders the pillow fort integrity meter.
+ * @param integrity Integrity level from 0 to 100.
+ */
+void print_fort_integrity(int integrity) {
+    const char *color = GRN;
+    const char *status = "FORTIFIED";
+    static const char bars_fill[] = "####################";
+    static const char bars_empty[] = "--------------------";
+
+    if (integrity < 30) {
+        color = RED;
+        status = "COMPROMISED";
+    } else if (integrity < 70) {
+        color = YEL;
+        status = "WEAKENED";
+    }
+
+    int bars = (integrity * METER_WIDTH) / 100;
+    printf("PILLOW FORT INTEGRITY: %s[%s] [%.*s%.*s] %d%%%s\n",
+           color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, integrity, RESET);
+}
 
 /**
  * Renders the squirrel threat meter.
@@ -124,9 +179,13 @@ const char* get_random_threat() {
         "Suspicious squirrel movement near pillow fort!",
         "Polish cow alert: Laps being run at 3 AM!",
         "Fungal network interference detected!",
-        "Infected acorn payload intercepted!"
+        "Infected acorn payload intercepted!",
+        "Microsoft Bob's ghost spotted in packets!",
+        "5G acorn resonance detected!",
+        "Clippy attempting to 'help' with encryption!",
+        "Suspicious pigeon (Google drone) on the windowsill!"
     };
-    return threats[rand() % 8];
+    return threats[rand() % 12];
 }
 
 /**
@@ -138,6 +197,8 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
+    int fort_integrity = 100;
+
     while (1) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
@@ -151,6 +212,7 @@ void engage_defenses() {
         if (threat_level > 100) threat_level = 100;
 
         print_threat_meter(threat_level);
+        print_fort_integrity(fort_integrity);
         printf("\n");
         print_graph_of_chaos();
 
@@ -163,6 +225,17 @@ void engage_defenses() {
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            if (threat_level > 85) {
+                fort_integrity -= 5;
+            }
+        }
+
+        if (fort_integrity <= 0) {
+            printf("\n%s!!! PILLOW FORT COMPROMISED !!!%s\n", RED, RESET);
+            printf("The squirrels have breached the perimeter. Retreating to secondary bunker...\n");
+            sleep(3);
+            break;
         }
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
@@ -209,15 +282,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("3. VIEW HOLY SCROLLS\n");
+        printf("4. SANCTIFY SCROLLS\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL || strstr(command, "ENGAGE DEFENSES") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || strstr(command, "EXIT") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else if (strstr(command, "3") != NULL || strstr(command, "VIEW HOLY SCROLLS") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "4") != NULL || strstr(command, "SANCTIFY SCROLLS") != NULL) {
+            sanctify_scrolls();
+        } else {
+            printf("Invalid command. The Google Machine is confused.\n");
+        }
     }
 
     return 0;
