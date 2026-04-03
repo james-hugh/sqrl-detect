@@ -94,18 +94,22 @@ void print_threat_meter(int level) {
 
 /**
  * Renders the GUI graph of chaos.
+ * OPTIMIZATION (⚡ Bolt): Reduces printf calls per row from O(val) to O(1)
+ * by using bulk character output with static buffers.
  */
 void print_graph_of_chaos() {
+    static const char xs[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char stars[] = "********************";
+    static const char dots[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *chars = dots;
+        if (val > 15) chars = xs;
+        else if (val > 8) chars = stars;
+
+        printf("%2d |%.*s\n", val, val, chars);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
