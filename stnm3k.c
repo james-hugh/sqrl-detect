@@ -12,8 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +40,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -93,6 +95,39 @@ void print_threat_meter(int level) {
 }
 
 /**
+ * Reads and prints the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    printf("\n--- VIEWING HOLY SCROLLS ---\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty or the squirrels have stolen them.\n");
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+}
+
+/**
+ * Truncates the holy scrolls, purifying the system.
+ */
+void sanctify_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "w");
+    if (fp == NULL) {
+        perror("Failed to sanctify scrolls");
+        return;
+    }
+    fclose(fp);
+    log_event("SCROLLS SANCTIFIED. THE SYSTEM IS PURE.");
+    printf("\nLOGS PURIFIED. GLORY BE.\n");
+}
+
+/**
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
@@ -138,7 +173,9 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    int fort_integrity = 100;
+
+    while (fort_integrity > 0) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -151,7 +188,8 @@ void engage_defenses() {
         if (threat_level > 100) threat_level = 100;
 
         print_threat_meter(threat_level);
-        printf("\n");
+        printf("PILLOW FORT INTEGRITY: %d%%\n\n", fort_integrity);
+
         print_graph_of_chaos();
 
         if (threat_level > 70) {
@@ -163,6 +201,20 @@ void engage_defenses() {
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            if (threat_level > 85) {
+                fort_integrity -= 5;
+            }
+        }
+
+        if (fort_integrity <= 0) {
+            printf("\n%s!!! CRITICAL FAILURE !!!%s\n", RED, RESET);
+            printf("PILLOW FORT BREACHED. THE SQUIRRELS HAVE WON.\n");
+            log_event("PILLOW FORT DESTROYED. RETREATING TO UNDERGROUND BUNKER.");
+            printf("\nPress Enter to accept defeat...\n");
+            getchar(); // Consume newline from previous input if any
+            getchar();
+            break;
         }
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
@@ -209,15 +261,27 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. SANCTIFY SCROLLS\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL) {
+            sanctify_scrolls();
+        } else if (strstr(command, "4") != NULL || strncasecmp(command, "EXIT", 4) == 0) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid selection. The Google Machine is laughing at you.\n");
+        }
     }
 
     return 0;
