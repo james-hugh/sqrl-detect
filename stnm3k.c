@@ -88,7 +88,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -142,6 +142,7 @@ void engage_defenses() {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
+        printf("======================================================================\n");
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
@@ -183,7 +184,7 @@ int authenticate_user() {
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
-        printf("(%d/3) > ", prayer_count + 1);
+        printf("(%d/3) [SYSTEM] > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
@@ -209,9 +210,10 @@ int main() {
     }
 
     char command[100];
+    printf("\n--- MAIN MENU ---\n");
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
+    printf("[SYSTEM] > ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
