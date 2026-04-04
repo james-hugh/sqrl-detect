@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,12 +36,18 @@
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Sets umask to ensure restricted file permissions by default.
  */
 void init_system() {
+    // Restrict permissions for all files/dirs created by this process (owner only)
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    // Direct creation of log directory to avoid TOCTOU race conditions
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
