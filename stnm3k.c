@@ -113,6 +113,28 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Displays the contents of the holy scrolls.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. Perhaps the cows ate them?\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+    printf("\nPress Enter to return to the menu...");
+    char buffer[10];
+    fgets(buffer, sizeof(buffer), stdin);
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
@@ -138,7 +160,8 @@ void engage_defenses() {
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
-    while (1) {
+    int fort_integrity = 100;
+    while (fort_integrity > 0) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -151,6 +174,7 @@ void engage_defenses() {
         if (threat_level > 100) threat_level = 100;
 
         print_threat_meter(threat_level);
+        printf("PILLOW FORT INTEGRITY: %d%%\n", fort_integrity);
         printf("\n");
         print_graph_of_chaos();
 
@@ -163,6 +187,18 @@ void engage_defenses() {
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            if (threat_level > 85) {
+                fort_integrity -= 5;
+            }
+        }
+
+        if (fort_integrity <= 0) {
+            printf("\n%s!!! PILLOW FORT COMPROMISED !!!%s\n", RED, RESET);
+            printf("The squirrels have breached the perimeter. Retreat to the secondary fort!\n");
+            log_event("PILLOW FORT BREACHED. EVACUATING.");
+            sleep(3);
+            break;
         }
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
@@ -209,15 +245,24 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN MENU ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strstr(command, "VIEW HOLY SCROLLS") != NULL || strstr(command, "2") != NULL) {
+            view_logs();
+        } else if (strstr(command, "EXIT") != NULL || strstr(command, "3") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("INVALID COMMAND. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
