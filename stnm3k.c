@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
  * Version: 0.69
@@ -186,7 +187,7 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasestr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -197,6 +198,25 @@ int authenticate_user() {
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
     return 1;
+}
+
+/**
+ * Displays the holy scrolls (logs) to the user.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nTHE HOLY SCROLLS ARE EMPTY OR MISSING. THE SQUIRRELS ARE STEALTHY.\n");
+        return;
+    }
+
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n\n");
+    fclose(fp);
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -210,12 +230,15 @@ int main() {
 
     char command[100];
     printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
+    printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+    printf("3. EXIT (COWARDLY)\n");
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasestr(command, "ENGAGE DEFENSES") != NULL || strcasestr(command, "1") != NULL) {
         engage_defenses();
+    } else if (strcasestr(command, "VIEW LOGS") != NULL || strcasestr(command, "2") != NULL) {
+        view_logs();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
