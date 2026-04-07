@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +35,17 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
- * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Initializes the system by seeding the RNG and securing the environment.
+ * Sets a strict umask (0077) to ensure any files created (like the log file)
+ * are only accessible to the owner. This follows the Principle of Least Privilege.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Deny all permissions to group and others for new files/dirs
+
+    // Idempotent log directory creation with secure permissions (700)
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log sanctuary");
     }
 }
 
