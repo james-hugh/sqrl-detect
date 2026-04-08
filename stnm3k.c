@@ -9,11 +9,13 @@
  * using ASCII-based visualizations and random event generation.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +40,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -93,24 +95,47 @@ void print_threat_meter(int level) {
 }
 
 /**
- * Renders the GUI graph of chaos.
+ * Renders the GUI graph of chaos with optimized buffer handling.
  */
 void print_graph_of_chaos() {
+    static const char x_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_fill[] = "********************";
+    static const char dot_fill[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *fill = dot_fill;
+        if (val > 15) fill = x_fill;
+        else if (val > 8) fill = star_fill;
+
+        printf("%2d |%.*s\n", val, val, fill);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
 
 /* --- CORE ENGINE LOGIC --- */
+
+/**
+ * Displays the contents of the holy scrolls of truth.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe Holy Scrolls are empty. No squirrel treachery recorded... yet.\n");
+    } else {
+        char line[256];
+        printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+        printf("--- END OF SCROLLS ---\n");
+    }
+    printf("\nPress ENTER to return to the Command Center...");
+    while (getchar() != '\n'); // Clear buffer
+    getchar(); // Wait for enter
+}
 
 /**
  * Returns a random threat message for the paranoid user.
@@ -133,12 +158,17 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
-    printf("\n--- ENGAGING DEFENSES ---\n");
+    printf("\n======================================================================\n");
+    printf("--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("======================================================================\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
-    while (1) {
+    int fort_integrity = 100;
+
+    while (fort_integrity > 0) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -150,6 +180,7 @@ void engage_defenses() {
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
 
+        printf("PILLOW FORT INTEGRITY: %d%%\n", fort_integrity);
         print_threat_meter(threat_level);
         printf("\n");
         print_graph_of_chaos();
@@ -163,12 +194,20 @@ void engage_defenses() {
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            if (threat_level > 85) {
+                fort_integrity -= 5;
+            }
         }
 
         printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
         fflush(stdout);
         sleep(1);
     }
+
+    printf("\n%s[CRITICAL] PILLOW FORT COMPROMISED!%s\n", RED, RESET);
+    printf("The squirrels have breached the perimeter. Retreating to the secondary bunker...\n");
+    sleep(2);
 }
 
 /**
@@ -209,15 +248,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- STNM3K COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strcasestr(command, "ENGAGE") || strstr(command, "1")) {
+            engage_defenses();
+        } else if (strcasestr(command, "VIEW") || strstr(command, "2")) {
+            view_logs();
+        } else if (strcasestr(command, "EXIT") || strstr(command, "3")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
