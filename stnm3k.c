@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
  * Version: 0.69
@@ -186,7 +187,8 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasestr(command, "GLORY BE") != NULL) {
+            printf("%s[√] Accepted!%s\n", GRN, RESET);
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -195,7 +197,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%sAuthentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -214,7 +216,7 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (strcasestr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
