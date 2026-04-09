@@ -9,11 +9,13 @@
  * using ASCII-based visualizations and random event generation.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +40,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Critical failure creating log directory");
     }
 }
 
@@ -88,24 +90,48 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
+}
+
+/**
+ * Displays the holy scrolls (logs) to the user.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe Holy Scrolls are empty or missing. The cows have nothing to report.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+    printf("\nPress Enter to return to the Command Center...");
+    while (getchar() != '\n'); // Clear buffer
+    getchar(); // Wait for enter
 }
 
 /**
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char x_fill[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_fill[] = "********************";
+    static const char dot_fill[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *fill = dot_fill;
+        if (val > 15) fill = x_fill;
+        else if (val > 8) fill = star_fill;
+
+        printf("%2d |%.*s\n", val, val, fill);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -133,8 +159,10 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
-    printf("\n--- ENGAGING DEFENSES ---\n");
+    printf("\n======================================================================\n");
+    printf("--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("======================================================================\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
@@ -156,7 +184,7 @@ void engage_defenses() {
 
         if (threat_level > 70) {
             const char* threat = get_random_threat();
-            const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
+            const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT [CRITICAL]" : "YELLOW ACORN ALERT [CAUTION]";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
 
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
@@ -186,7 +214,7 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasestr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -195,7 +223,7 @@ int authenticate_user() {
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[√] Authentication successful. Welcome, Sentinel.%s\n", GRN, RESET);
     return 1;
 }
 
@@ -209,15 +237,26 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n==================== COMMAND CENTER ====================\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("========================================================\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strcasestr(command, "ENGAGE") || strstr(command, "1")) {
+            engage_defenses();
+        } else if (strcasestr(command, "LOGS") || strstr(command, "2")) {
+            view_logs();
+        } else if (strcasestr(command, "EXIT") || strstr(command, "3")) {
+            printf("\nCowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("\nUNKNOWN COMMAND. The Polish cows stare at you in confusion.\n");
+        }
     }
 
     return 0;
