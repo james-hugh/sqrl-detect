@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +35,20 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
- * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Initializes the system by seeding the RNG and ensuring the log directory exists securely.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    /* Set umask to 0077 so all files/dirs created by this process are owner-only (rwx------) */
+    umask(0077);
+
+    /* Atomically attempt to create the directory to avoid TOCTOU race conditions */
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to initialize holy scrolls directory");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
