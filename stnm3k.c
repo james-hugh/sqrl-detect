@@ -9,6 +9,7 @@
  * using ASCII-based visualizations and random event generation.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +68,30 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/**
+ * Displays the holy scrolls of truth (logs) to the user.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. Perhaps the squirrels have eaten them.\n");
+        printf("Press Enter to return to the Command Center...");
+        while (getchar() != '\n');
+        return;
+    }
+
+    char line[256];
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+
+    printf("\n--- END OF SCROLLS ---\n");
+    printf("Press Enter to return to the Command Center...");
+    while (getchar() != '\n');
+}
+
 /* --- VISUALIZATION ENGINE --- */
 
 /**
@@ -88,7 +113,7 @@ void print_threat_meter(int level) {
     }
 
     int bars = (level * METER_WIDTH) / 100;
-    printf("SQUIRREL THREAT METER: %s[%s] [%.*s%.*s] %d%%%s\n",
+    printf("SQUIRREL THREAT METER: %s[%-8s] [%.*s%.*s] %3d%%%s\n",
            color, status, bars, bars_fill, METER_WIDTH - bars, bars_empty, level, RESET);
 }
 
@@ -186,7 +211,7 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasestr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -209,15 +234,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (1) {
+        printf("\n--- COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strcasestr(command, "ENGAGE") != NULL || strstr(command, "1") != NULL) {
+            engage_defenses();
+        } else if (strcasestr(command, "VIEW") != NULL || strstr(command, "2") != NULL) {
+            view_logs();
+        } else if (strcasestr(command, "EXIT") != NULL || strcasestr(command, "COWARD") != NULL || strstr(command, "3") != NULL) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("The Polish cows are confused by your input. Try again.\n");
+        }
     }
 
     return 0;
