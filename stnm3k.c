@@ -1,6 +1,6 @@
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
- * Version: 0.69
+ * Version: 0.70
  * Platform: WINDOWS ME ONLY (GLORY BE)
  *
  * "Watching your network with the vigilance of Polish cows on 3 AM cocaine laps."
@@ -9,17 +9,19 @@
  * using ASCII-based visualizations and random event generation.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -38,9 +40,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -96,21 +98,61 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char markers[] = "XXXXXXXXXXXXXXXXXXXX"
+                                  "********************"
+                                  "....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *m = (val > 15) ? markers : (val > 8) ? markers + 20 : markers + 40;
+        printf("%2d |%.*s\n", val, val, m);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
 
 /* --- CORE ENGINE LOGIC --- */
+
+/**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nThe holy scrolls are empty or missing. Perhaps the squirrels ate them.\n");
+        return;
+    }
+
+    printf("\n--- HOLY SCROLLS OF TRUTH ---\n");
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        printf("%s", buffer);
+    }
+    fclose(fp);
+    printf("--- END OF SCROLLS ---\n");
+
+    printf("\nPress Enter to return to the Command Center...");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+/**
+ * Prints a randomized status report for the Polish cows.
+ */
+void print_cow_status() {
+    const char* statuses[] = {
+        "Running laps at Mach 1.",
+        "Staring intensely at a WiFi acorn.",
+        "Refusing to moo until more cocaine is provided.",
+        "Currently synchronized with the fungal network.",
+        "Alert: Cow 4 is vibrating slightly.",
+        "All cows accounted for and sufficiently paranoid."
+    };
+    printf("\n--- POLISH COW STATUS REPORT ---\n");
+    for (int i = 1; i <= 4; i++) {
+        printf("Cow %d: %s\n", i, statuses[rand() % 6]);
+    }
+}
 
 /**
  * Returns a random threat message for the paranoid user.
@@ -135,7 +177,9 @@ const char* get_random_threat() {
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("Initializing monitoring subsystems...\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
     while (1) {
@@ -158,6 +202,8 @@ void engage_defenses() {
             const char* threat = get_random_threat();
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
+
+            if (threat_level > 85) printf("\a"); // Audible alert
 
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
@@ -186,8 +232,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (strcasestr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -209,15 +256,28 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- MAIN COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+        printf("3. COW STATUS REPORT\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (command[0] == '1' && (command[1] == '\n' || command[1] == ' ')) {
+            engage_defenses();
+        } else if (command[0] == '2' && (command[1] == '\n' || command[1] == ' ')) {
+            view_logs();
+        } else if (command[0] == '3' && (command[1] == '\n' || command[1] == ' ')) {
+            print_cow_status();
+        } else if (command[0] == '4' && (command[1] == '\n' || command[1] == ' ')) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Invalid selection. The cows are confused.\n");
+        }
     }
 
     return 0;
