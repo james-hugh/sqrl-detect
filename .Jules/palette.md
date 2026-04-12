@@ -1,3 +1,3 @@
-## 2026-02-19 - Enhanced CLI Visibility and Accessibility
-**Learning:** In CLI environments, pairing ANSI color codes with explicit textual labels (e.g., [SECURE], [CRITICAL]) significantly improves both glanceability for power users and accessibility for users with color vision deficiencies or non-color terminals.
-**Action:** Always include textual state indicators alongside color-coded UI elements in terminal applications.
+## 2026-04-12 - Case-Insensitive CLI and Robust Menu Selection
+**Learning:** Using `strcasestr` significantly improves CLI accessibility by reducing capitalization errors, but numeric menu selection requires explicit boundary checks (e.g., `command[1] == '\n'`) to prevent multi-digit inputs from accidentally triggering single-digit options.
+**Action:** Always pair string-based command matching with explicit boundary or length checks for numeric shortcuts.
