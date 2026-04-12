@@ -1,0 +1,4 @@
+## 2026-04-12 - Defense in Depth via umask and TOCTOU Mitigation
+**Vulnerability:** The application was susceptible to a Time-of-Check to Time-of-Use (TOCTOU) race condition when creating the log directory. Additionally, it relied on explicit mode arguments for `mkdir` without a global safety net, potentially leading to overly permissive file creation if future logging logic was added.
+**Learning:** Relying on `stat()` followed by `mkdir()` creates a window where an attacker could potentially swap the path with a symbolic link. Using `umask(0077)` at the process level provides a robust "fail-secure" default that restricts all subsequent file and directory creations to the owner, regardless of explicit mode arguments.
+**Prevention:** Use `umask()` to set a restrictive baseline for process file creation. Always attempt directory creation directly and handle `EEXIST` (idempotency) to avoid TOCTOU vulnerabilities.
