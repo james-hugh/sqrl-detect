@@ -1,6 +1,6 @@
 /*
  * SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
- * Version: 0.69
+ * Version: 0.70
  * Platform: WINDOWS ME ONLY (GLORY BE)
  *
  * "Watching your network with the vigilance of Polish cows on 3 AM cocaine laps."
@@ -14,12 +14,14 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -34,13 +36,37 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Case-insensitive search for a needle in a haystack.
+ * @param haystack The string to search in.
+ * @param needle The string to search for.
+ * @return 1 if found, 0 otherwise.
+ */
+int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        size_t j;
+        for (j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == needle_len) return 1;
+    }
+    return 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -96,21 +122,66 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buf[] = "********************";
+    static const char dot_buf[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, x_buf);
+        else if (val > 8) printf("%.*s", val, star_buf);
+        else printf("%.*s", val, dot_buf);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
 
 /* --- CORE ENGINE LOGIC --- */
+
+/**
+ * Reads and displays the holy scrolls (logs).
+ */
+void view_logs() {
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. The squirrels haven't dared yet.\n");
+    } else {
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+    }
+    printf("\n[Press ENTER to return to the Command Center]");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+/**
+ * Displays the current status of the Polish cows.
+ */
+void print_cow_status() {
+    const char* statuses[] = {
+        "Running cocaine laps at record speed.",
+        "Staring intensely at a WiFi acorn.",
+        "Monitoring the fungal network with twitching ears.",
+        "Alert: Cow 4 is doing 3 AM wind sprints.",
+        "Quietly judging your pillow fort defenses.",
+        "Synchronizing moos with the Google Machine pings."
+    };
+    printf("\n--- POLISH COW STATUS REPORT ---\n");
+    for (int i = 1; i <= 3; i++) {
+        printf("Cow #%d: %s\n", i, statuses[rand() % 6]);
+    }
+    printf("\n[Press ENTER to return to the Command Center]");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
 
 /**
  * Returns a random threat message for the paranoid user.
@@ -186,8 +257,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -209,15 +281,31 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- STNM3K COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS (HOLY SCROLLS)\n");
+        printf("3. COW STATUS REPORT\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if ((command[0] == '1' && (command[1] == '\n' || command[1] == ' ')) ||
+            str_contains_ignore_case(command, "ENGAGE DEFENSES")) {
+            engage_defenses();
+        } else if ((command[0] == '2' && (command[1] == '\n' || command[1] == ' ')) ||
+                   str_contains_ignore_case(command, "VIEW LOGS")) {
+            view_logs();
+        } else if ((command[0] == '3' && (command[1] == '\n' || command[1] == ' ')) ||
+                   str_contains_ignore_case(command, "COW STATUS")) {
+            print_cow_status();
+        } else if ((command[0] == '4' && (command[1] == '\n' || command[1] == ' ')) ||
+                   str_contains_ignore_case(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+        }
     }
 
     return 0;
