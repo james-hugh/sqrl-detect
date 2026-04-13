@@ -14,12 +14,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -37,10 +38,13 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    // Set umask to ensure all created files/directories are private (owner-only access)
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    // Idempotent directory creation with error check to avoid TOCTOU race conditions
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -214,7 +218,8 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    // Robust input check to prevent partial matches (e.g., "10" from matching "1")
+    if (strstr(command, "ENGAGE DEFENSES") != NULL || (command[0] == '1' && (command[1] == '\n' || command[1] == ' '))) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
