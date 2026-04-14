@@ -67,6 +67,67 @@ void log_event(const char *event) {
     fclose(fp);
 }
 
+/**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_logs() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\nNo logs found. The scrolls are empty. The cows are suspicious.\n");
+    } else {
+        printf("\n--- HOLY SCROLLS OF TRUTH ---\n");
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+        printf("--- END OF SCROLLS ---\n");
+    }
+    printf("\n[Press Enter to return to the Command Center]");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+/**
+ * Displays randomized humorous metrics for the Polish cows.
+ */
+void print_cow_status() {
+    int speed = (rand() % 50) + 10;
+    int cocaine_level = (rand() % 100);
+    const char *status = "IDLE";
+
+    if (cocaine_level > 80) status = "HYPER-ACTIVE (3 AM LAPS)";
+    else if (cocaine_level > 50) status = "VIGILANT";
+    else if (cocaine_level > 20) status = "MELLOW";
+
+    printf("\n--- POLISH COW STATUS REPORT ---\n");
+    printf("Cow Identification: [COW-7-ALPHA]\n");
+    printf("Current Lap Speed: %d m/s\n", speed);
+    printf("Cocaine Synergy Level: %d%%\n", cocaine_level);
+    printf("Current Mental State: %s\n", status);
+    printf("---------------------------------\n");
+
+    printf("\n[Press Enter to return to the Command Center]");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+/**
+ * Simulates feeding the cows 5mg of cocaine for optimal alert synergy.
+ */
+void feed_cows() {
+    printf("\nFeeding the Polish cows 5mg of high-grade cocaine...\n");
+    printf("Optimal alert synergy achieved! The cows are now vibrating with vigilance.\n");
+    log_event("COWS FED. SYNERGY BOOSTED TO MAXIMUM.");
+
+    printf("\n[Press Enter to return to the Command Center]");
+    fflush(stdout);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
 /* --- VISUALIZATION ENGINE --- */
 
 /**
@@ -154,6 +215,11 @@ void engage_defenses() {
         printf("\n");
         print_graph_of_chaos();
 
+        printf("\n--- SYSTEM STATUS ---\n");
+        printf("Fungal Network Messaging: %s\n", (rand() % 2) ? "PULSE STABLE" : "SPORES SYNCING...");
+        printf("RAW-ALERT Integrity: %d%%\n", (rand() % 20) + 81);
+        printf("Pillow Fort Status: %s\n", (threat_level > 85) ? "UNDER SIEGE!" : "SECURE");
+
         if (threat_level > 70) {
             const char* threat = get_random_threat();
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
@@ -209,15 +275,36 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int running = 1;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (running) {
+        printf("\033[H\033[J");
+        printf("🖥️  STNM3K COMMAND CENTER v%s\n", VERSION);
+        printf("-------------------------------\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW LOGS\n");
+        printf("3. CHECK COW STATUS\n");
+        printf("4. FEED COWS\n");
+        printf("5. EXIT (COWARDLY)\n");
+        printf("> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (command[0] == '1' && (command[1] == '\n' || command[1] == ' ')) {
+            engage_defenses();
+        } else if (command[0] == '2' && (command[1] == '\n' || command[1] == ' ')) {
+            view_logs();
+        } else if (command[0] == '3' && (command[1] == '\n' || command[1] == ' ')) {
+            print_cow_status();
+        } else if (command[0] == '4' && (command[1] == '\n' || command[1] == ' ')) {
+            feed_cows();
+        } else if (command[0] == '5' && (command[1] == '\n' || command[1] == ' ')) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            running = 0;
+        } else {
+            printf("Unknown command. The Polish cows are confused.\n");
+            sleep(1);
+        }
     }
 
     return 0;
