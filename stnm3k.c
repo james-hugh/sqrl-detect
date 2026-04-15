@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -32,6 +33,25 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Portable case-insensitive string search.
+ * Returns a pointer to the first occurrence of needle in haystack, or NULL if not found.
+ */
+const char* str_contains_ignore_case(const char* haystack, const char* needle) {
+    if (!haystack || !needle) return NULL;
+    if (needle[0] == '\0') return haystack;
+
+    for (size_t i = 0; haystack[i] != '\0'; i++) {
+        size_t j = 0;
+        while (haystack[i + j] != '\0' && needle[j] != '\0' &&
+               tolower((unsigned char)haystack[i + j]) == tolower((unsigned char)needle[j])) {
+            j++;
+        }
+        if (needle[j] == '\0') return &haystack[i];
+    }
+    return NULL;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -135,6 +155,9 @@ const char* get_random_threat() {
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("Initializing monitoring subsystems...\n");
+    fflush(stdout);
+    sleep(1);
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
@@ -186,8 +209,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -209,15 +233,31 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\033[H\033[J");
+        printf("🖥️  STNM3K COMMAND CENTER\n");
+        printf("-------------------------\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("> ");
+        fflush(stdout);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (str_contains_ignore_case(command, "ENGAGE DEFENSES") != NULL ||
+            (command[0] == '1' && (command[1] == '\n' || command[1] == ' '))) {
+            engage_defenses();
+        } else if (str_contains_ignore_case(command, "EXIT") != NULL ||
+                   (command[0] == '2' && (command[1] == '\n' || command[1] == ' '))) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("\n%s[!] UNKNOWN COMMAND%s\n", YEL, RESET);
+            printf("The Google Machine is trying to confuse you. Stay vigilant!\n");
+            printf("Press ENTER to try again...");
+            fflush(stdout);
+            getchar(); // Pause for user
+        }
     }
 
     return 0;
