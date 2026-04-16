@@ -9,6 +9,7 @@
  * using ASCII-based visualizations and random event generation.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +33,28 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Case-insensitive search for a needle in a haystack.
+ * @return Pointer to the first occurrence or NULL if not found.
+ */
+char *str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return NULL;
+    if (!*needle) return (char *)haystack;
+
+    for (; *haystack; haystack++) {
+        if (tolower((unsigned char)*haystack) == tolower((unsigned char)*needle)) {
+            const char *h = haystack;
+            const char *n = needle;
+            while (*h && *n && tolower((unsigned char)*h) == tolower((unsigned char)*n)) {
+                h++;
+                n++;
+            }
+            if (!*n) return (char *)haystack;
+        }
+    }
+    return NULL;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -135,7 +158,10 @@ const char* get_random_threat() {
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("\nInitializing monitoring subsystems...\n");
+    fflush(stdout);
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
     while (1) {
@@ -186,8 +212,9 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
@@ -214,7 +241,7 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (str_contains_ignore_case(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
