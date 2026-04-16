@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +39,13 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    /* Set umask to 0077 to ensure logs and directories are owner-only by default */
+    umask(0077);
+
+    /* Atomically create directory to avoid TOCTOU race condition */
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to initialize log directory");
     }
 }
 
@@ -58,7 +63,10 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        size_t len = strlen(timestamp);
+        if (len > 0) {
+            timestamp[len - 1] = '\0'; // Remove trailing newline
+        }
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -184,18 +192,23 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            memset(command, 0, sizeof(command));
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            memset(command, 0, sizeof(command));
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    memset(command, 0, sizeof(command));
     return 1;
 }
 
