@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,12 +37,15 @@
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Uses restricted umask and atomic directory creation.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077);
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("CRITICAL: Failed to initialize log repository");
+        }
     }
 }
 
@@ -172,6 +177,56 @@ void engage_defenses() {
 }
 
 /**
+ * Reads and displays the holy scrolls of truth.
+ */
+void view_logs() {
+    printf("\n--- READING THE HOLY SCROLLS OF TRUTH ---\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty or missing. Perhaps the squirrels ate them?\n");
+    } else {
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+    }
+    printf("\n[Press ENTER to return to Command Center]");
+    getchar(); // Wait for user
+}
+
+/**
+ * Performs a manual scan for acorns and squirrel activity.
+ */
+void manual_scan() {
+    printf("\n--- PERFORMING MANUAL ACORN SCAN ---\n");
+    log_event("MANUAL SCAN INITIATED.");
+
+    int scan_time = 3;
+    const char* phases[] = {
+        "Triangulating WiFi Acorns...",
+        "Consulting with Polish Cows...",
+        "Scanning Fungal Network for anomalies..."
+    };
+
+    for (int i = 0; i < scan_time; i++) {
+        printf("[%d/%d] %s\n", i + 1, scan_time, phases[i]);
+        sleep(1);
+    }
+
+    int threat = rand() % 101;
+    printf("\nSCAN COMPLETE. THREAT LEVEL: %d%%\n", threat);
+    if (threat > 50) {
+        printf("WARNING: %s\n", get_random_threat());
+    } else {
+        printf("STATUS: Sector clear. Continue your vigilance, Sentinel.\n");
+    }
+
+    printf("\n[Press ENTER to return to Command Center]");
+    getchar(); // Wait for user
+}
+
+/**
  * Handles user authentication via the sacred prayer.
  * @return 1 if authenticated, 0 otherwise.
  */
@@ -187,6 +242,7 @@ int authenticate_user() {
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
         if (strstr(command, "GLORY BE") != NULL) {
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -209,15 +265,34 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\033[H\033[J");
+        printf("🖥️  STNM3K COMMAND CENTER v%s\n", VERSION);
+        printf("-------------------------------\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. MANUALLY SCAN FOR ACORNS\n");
+        printf("3. VIEW HOLY SCROLLS\n");
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (command[0] == '1' && (command[1] == '\n' || command[1] == ' ')) {
+            engage_defenses();
+        } else if (command[0] == '2' && (command[1] == '\n' || command[1] == ' ')) {
+            manual_scan();
+        } else if (command[0] == '3' && (command[1] == '\n' || command[1] == ' ')) {
+            view_logs();
+        } else if (command[0] == '4' && (command[1] == '\n' || command[1] == ' ')) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else if (strlen(command) > 1) {
+            // Check for full strings as well for backward compatibility/flexibility
+            if (strstr(command, "ENGAGE DEFENSES") != NULL) engage_defenses();
+            else if (strstr(command, "MANUALLY SCAN") != NULL) manual_scan();
+            else if (strstr(command, "VIEW HOLY SCROLLS") != NULL) view_logs();
+            else if (strstr(command, "EXIT") != NULL) break;
+        }
     }
 
     return 0;
