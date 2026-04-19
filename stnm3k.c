@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,9 +39,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure restricted permissions for logs (owner only)
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -58,7 +59,8 @@ void log_event(const char *event) {
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     if (timestamp) {
-        timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
+        size_t len = strlen(timestamp);
+        if (len > 0) timestamp[len - 1] = '\0'; // Remove trailing newline
     } else {
         timestamp = "UNKNOWN TIME";
     }
@@ -191,10 +193,12 @@ int authenticate_user() {
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            memset(command, 0, sizeof(command));
             return 0;
         }
     }
 
+    memset(command, 0, sizeof(command));
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
     return 1;
 }
@@ -220,5 +224,6 @@ int main() {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
 
+    memset(command, 0, sizeof(command));
     return 0;
 }
