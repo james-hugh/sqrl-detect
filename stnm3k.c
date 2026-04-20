@@ -14,12 +14,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -34,13 +35,23 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Securely zeros out a memory buffer using a volatile pointer to prevent
+ * compiler optimization that might otherwise skip the operation if the
+ * buffer is not used again.
+ */
+void secure_memzero(void *v, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)v;
+    while (n--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -57,9 +68,9 @@ void log_event(const char *event) {
 
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
-    if (timestamp) {
+    if (timestamp && strlen(timestamp) > 0) {
         timestamp[strlen(timestamp) - 1] = '\0'; // Remove trailing newline
-    } else {
+    } else if (!timestamp) {
         timestamp = "UNKNOWN TIME";
     }
 
@@ -196,6 +207,7 @@ int authenticate_user() {
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    secure_memzero(command, sizeof(command));
     return 1;
 }
 

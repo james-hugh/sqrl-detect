@@ -1,0 +1,4 @@
+## 2026-04-20 - Restricted File Permissions and Secure Memory Clearing
+**Vulnerability:** The application was creating a log directory and files with default (overly permissive) permissions, and it was using `memset` to clear sensitive authentication data from memory, which could be optimized away by the compiler.
+**Learning:** In C, `umask` should be set early to ensure all subsequently created files and directories have restricted permissions by default. Additionally, standard `memset` calls on local buffers that are not used again before a function returns are often removed by compilers as part of dead-store elimination.
+**Prevention:** Always use `umask(0077)` for security-sensitive applications and implement a `secure_memzero` function using a volatile pointer to ensure that sensitive data in memory is actually cleared.
