@@ -14,12 +14,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -34,13 +35,21 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Zeroes out sensitive memory in a way that prevents compiler optimization.
+ */
+void secure_memzero(void *v, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)v;
+    while (n--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure all created files/dirs are owner-restricted
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -184,13 +193,21 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Remove newline for strict comparison
+        command[strcspn(command, "\n")] = 0;
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
+            secure_memzero(command, sizeof(command));
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
