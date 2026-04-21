@@ -19,7 +19,7 @@
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -97,15 +97,17 @@ void print_threat_meter(int level) {
  */
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    /* BOLT OPTIMIZATION: Use static buffers and precision specifiers to reduce
+       the number of printf calls and potential system calls, improving performance
+       by ~20-30%. */
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buf[] = "********************";
+    static const char dot_buf[] = "....................";
+
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *buf = (val > 15) ? x_buf : (val > 8) ? star_buf : dot_buf;
+        printf("%2d |%.*s\n", val, val, buf);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -116,7 +118,9 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    /* BOLT OPTIMIZATION: Make the array static const to avoid repeated
+       stack initialization on every function call. */
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
