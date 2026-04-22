@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +35,28 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Securely zeros out a memory buffer using a volatile pointer to prevent
+ * compiler optimization (dead-store elimination).
+ */
+void secure_memzero(void *v, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)v;
+    while (n--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    // Set umask to ensure all created files/dirs are owner-only
+    umask(0077);
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+
+    // Create log directory with owner-only permissions.
+    // We call mkdir directly to avoid TOCTOU race conditions.
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
@@ -184,13 +200,18 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            secure_memzero(command, sizeof(command));
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
