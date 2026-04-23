@@ -14,12 +14,14 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -32,6 +34,28 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Checks if string 'haystack' contains string 'needle', ignoring case.
+ * @return 1 if found, 0 otherwise.
+ */
+int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        size_t j;
+        for (j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == needle_len) return 1;
+    }
+    return 0;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -96,15 +120,17 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buf[] = "********************";
+    static const char dot_buf[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, x_buf);
+        else if (val > 8) printf("%.*s", val, star_buf);
+        else printf("%.*s", val, dot_buf);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -116,7 +142,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -136,14 +162,19 @@ void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
-    while (1) {
+    int terminated_squirrels = 0;
+    int iterations = 0;
+
+    while (iterations < 10) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("SQUIRRELS TERMINATED: %d\n\n", terminated_squirrels);
 
         int change = (rand() % 31) - 15; // -15 to +15
         threat_level += change;
@@ -162,13 +193,23 @@ void engage_defenses() {
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
+
+            if (threat_level > 85) {
+                terminated_squirrels++;
+                printf("COUNTER-SQUIRREL MEASURES ACTIVATED: TERMINATION SUCCESSFUL.\n");
+            }
+
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%d/10) (Ctrl+C to retreat to your pillow fort early)\n", iterations + 1);
         fflush(stdout);
         sleep(1);
+        iterations++;
     }
+
+    printf("\nMonitoring cycle complete. Returning to Command Center...\n");
+    sleep(2);
 }
 
 /**
@@ -186,7 +227,7 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
@@ -199,6 +240,32 @@ int authenticate_user() {
     return 1;
 }
 
+/**
+ * Displays the contents of the holy scrolls.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        if (errno == ENOENT) {
+            printf("\nThe holy scrolls are empty. No threats detected... yet.\n");
+        } else {
+            perror("Failed to open holy scrolls");
+        }
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    printf("--- END OF SCROLLS ---\n");
+    fclose(fp);
+
+    printf("\nPress Enter to return to the Command Center...");
+    getchar();
+}
+
 /* --- MAIN ENTRY POINT --- */
 
 int main() {
@@ -209,15 +276,25 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- STNM3K COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. EXIT (COWARDLY)\n");
+        printf("> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (str_contains_ignore_case(command, "ENGAGE DEFENSES") || str_contains_ignore_case(command, "1")) {
+            engage_defenses();
+        } else if (str_contains_ignore_case(command, "VIEW HOLY SCROLLS") || str_contains_ignore_case(command, "2")) {
+            view_holy_scrolls();
+        } else if (str_contains_ignore_case(command, "EXIT") || str_contains_ignore_case(command, "3")) {
+            printf("Retreating to pillow fort. The Polish cows watch your back.\n");
+            break;
+        } else {
+            printf("Unknown command. The Google Machine is confused.\n");
+        }
     }
 
     return 0;
