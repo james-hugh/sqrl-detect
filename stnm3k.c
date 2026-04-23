@@ -19,7 +19,7 @@
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -96,16 +96,17 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char xs[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char stars[] = "********************";
+    static const char dots[] = "....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *buf = dots;
+        if (val > 15) buf = xs;
+        else if (val > 8) buf = stars;
+
+        printf("%2d |%.*s\n", val, val, buf);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
