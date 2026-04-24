@@ -9,3 +9,4 @@ $(TARGET): stnm3k.c
 
 clean:
 	rm -f $(TARGET)
+	rm -rf logs
