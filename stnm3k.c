@@ -14,12 +14,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
+#define VERSION "0.70"
 #define PLATFORM "WINDOWS ME (GLORY BE)"
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
@@ -34,13 +35,26 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Securely zeros out a memory buffer to prevent sensitive data from lingering.
+ * Uses a volatile pointer to ensure the compiler doesn't optimize out the store.
+ */
+void secure_memzero(void *s, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)s;
+    while (n--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
+ * Sets a restrictive umask to ensure all created files are owner-only.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    umask(0077); // Ensure all files/dirs created by this process are private
+
+    if (mkdir(LOG_DIR, 0700) == -1) {
+        if (errno != EEXIST) {
+            perror("Failed to create log directory");
+        }
     }
 }
 
@@ -178,25 +192,36 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int success = 0;
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[X] INCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            success = 0;
+            goto cleanup;
         }
+        secure_memzero(command, sizeof(command));
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    success = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return success;
 }
 
 /* --- MAIN ENTRY POINT --- */
