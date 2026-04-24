@@ -1,6 +1,6 @@
 🖥️ SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K)
 
-Version: 0.69
+Version: 0.70
 Platform: WINDOWS ME ONLY (GLORY BE)
 Author: James Hungh – Protector of Cows, Vanquisher of WiFi Acorns
 
