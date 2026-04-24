@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -42,6 +43,28 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Portable case-insensitive string search.
+ * Returns a pointer to the first occurrence of needle in haystack, or NULL if not found.
+ */
+const char* str_contains_ignore_case(const char* haystack, const char* needle) {
+    if (!haystack || !needle) return NULL;
+    if (!*needle) return haystack;
+
+    for (; *haystack; haystack++) {
+        if (tolower((unsigned char)*haystack) == tolower((unsigned char)*needle)) {
+            const char *h = haystack;
+            const char *n = needle;
+            while (*h && *n && tolower((unsigned char)*h) == tolower((unsigned char)*n)) {
+                h++;
+                n++;
+            }
+            if (!*n) return haystack;
+        }
+    }
+    return NULL;
 }
 
 /**
@@ -186,10 +209,11 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE") != NULL) {
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[X] INCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
