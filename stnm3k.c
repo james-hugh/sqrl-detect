@@ -94,18 +94,22 @@ void print_threat_meter(int level) {
 
 /**
  * Renders the GUI graph of chaos.
+ * Optimized to reduce printf calls by using static character buffers.
  */
 void print_graph_of_chaos() {
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buf[] = "********************";
+    static const char dot_buf[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *buf = dot_buf;
+        if (val > 15) buf = x_buf;
+        else if (val > 8) buf = star_buf;
+
+        // Use %.*s to print exactly 'val' characters from the buffer, reducing syscalls.
+        printf("%2d |%.*s\n", val, val, buf);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -114,9 +118,10 @@ void print_graph_of_chaos() {
 
 /**
  * Returns a random threat message for the paranoid user.
+ * Array is static const to avoid repeated stack allocation and initialization.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
