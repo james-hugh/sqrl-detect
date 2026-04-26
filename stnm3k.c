@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,13 +36,42 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Case-insensitive substring search.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t h_len = strlen(haystack);
+    size_t n_len = strlen(needle);
+    if (n_len > h_len) return 0;
+
+    for (size_t i = 0; i <= h_len - n_len; i++) {
+        size_t j;
+        for (j = 0; j < n_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == n_len) return 1;
+    }
+    return 0;
+}
+
+/**
+ * Securely zeros a memory buffer to prevent sensitive data from lingering.
+ */
+static void secure_memzero(void *ptr, size_t len) {
+    volatile unsigned char *p = ptr;
+    while (len--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    // Direct mkdir check is more robust than stat (prevents TOCTOU)
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -94,17 +125,20 @@ void print_threat_meter(int level) {
 
 /**
  * Renders the GUI graph of chaos.
+ * Optimized to reduce syscalls using static buffers and precision formatting.
  */
 void print_graph_of_chaos() {
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buf[] = "********************";
+    static const char dot_buf[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, x_buf);
+        else if (val > 8) printf("%.*s", val, star_buf);
+        else printf("%.*s", val, dot_buf);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -116,7 +150,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -134,11 +168,17 @@ const char* get_random_threat() {
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
+    printf("%s[√] SUCCESS: SYSTEM ARMED.%s\n", GRN, RESET);
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
+    // Brief pause to allow user to read the engagement confirmation
+    sleep(1);
+
     int threat_level = 10;
-    while (1) {
+    int iterations = 0;
+    // Monitor for 10 iterations then return to menu for interactivity
+    while (iterations < 10) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
@@ -159,16 +199,25 @@ void engage_defenses() {
             const char* alert_name = (threat_level > 85) ? "RED SQUIRREL ALERT" : "YELLOW ACORN ALERT";
             const char* alert_color = (threat_level > 85) ? RED : YEL;
 
+            if (threat_level > 85) {
+                printf("%s[RAW-ALERT ACTIVE] [TOP-MOST]%s\n", RED, RESET);
+            }
+
             printf("\n%s!!! %s !!!%s\n", alert_color, alert_name, RESET);
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (%d/10)\n", iterations + 1);
         fflush(stdout);
         sleep(1);
+        iterations++;
     }
+    printf("\nMonitoring cycle complete. Returning to Command Center.\n");
+    printf("Press Enter to continue...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin) == NULL) { /* Handle EOF */ }
 }
 
 /**
@@ -178,25 +227,33 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int success = 0;
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
+            printf("%s[√] ACCEPTED%s\n", GRN, RESET);
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[X] INCORRECT PRAYER.%s\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    success = 1;
+    secure_memzero(command, sizeof(command));
+    return success;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -209,15 +266,21 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\n--- COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. EXIT (COWARDLY)\n");
+        printf("> ");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (str_contains_ignore_case(command, "ENGAGE") || str_contains_ignore_case(command, "1")) {
+            engage_defenses();
+        } else if (str_contains_ignore_case(command, "EXIT") || str_contains_ignore_case(command, "2")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        } else {
+            printf("Unknown command. The Google Machine is confused.\n");
+        }
     }
 
     return 0;
