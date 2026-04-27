@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +33,40 @@
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
 
+/* --- UTILITY FUNCTIONS --- */
+
+/**
+ * Robustly clears a memory buffer.
+ * Uses a volatile pointer to prevent compiler optimization.
+ */
+static void secure_memzero(void *s, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)s;
+    while (n--) *p++ = 0;
+}
+
+/**
+ * Checks if a string contains another string, case-insensitive.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        int match = 1;
+        for (size_t j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                match = 0;
+                break;
+            }
+        }
+        if (match) return 1;
+    }
+    return 0;
+}
+
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
@@ -38,9 +74,9 @@
  */
 void init_system() {
     srand(time(NULL));
-    struct stat st = {0};
-    if (stat(LOG_DIR, &st) == -1) {
-        mkdir(LOG_DIR, 0700);
+    // Direct mkdir check to avoid TOCTOU race condition
+    if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST) {
+        perror("Failed to create log directory");
     }
 }
 
@@ -94,17 +130,20 @@ void print_threat_meter(int level) {
 
 /**
  * Renders the GUI graph of chaos.
+ * Optimized with static buffers to reduce printf calls.
  */
 void print_graph_of_chaos() {
+    static const char x_buff[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char star_buff[] = "********************";
+    static const char dot_buff[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15) printf("%.*s", val, x_buff);
+        else if (val > 8) printf("%.*s", val, star_buff);
+        else printf("%.*s", val, dot_buff);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -116,7 +155,7 @@ void print_graph_of_chaos() {
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -131,21 +170,28 @@ const char* get_random_threat() {
 
 /**
  * Enters the main monitoring loop.
+ * @param dosage Cocaine dosage affecting threat volatility.
  */
-void engage_defenses() {
+void engage_defenses(int dosage) {
     printf("\n--- ENGAGING DEFENSES ---\n");
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
+    sleep(1);
 
     int threat_level = 10;
-    while (1) {
+    int iterations = 0;
+    static int squirrels_terminated = 0;
+
+    while (iterations < 10) {
         // Clear screen (works on most terminals)
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("SQUIRRELS TERMINATED: %d\n\n", squirrels_terminated);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int volatility = 15 + (dosage / 2);
+        int change = (rand() % (volatility * 2 + 1)) - volatility;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -163,12 +209,22 @@ void engage_defenses() {
             printf("ALERT: %s\n", threat);
             log_event(threat);
             printf("Fungal Network Messaging: ENCRYPTED ALERT SENT TO PILLOW FORT.\n");
+
+            if (threat_level > 90) {
+                squirrels_terminated += (rand() % 5) + 1;
+            }
         }
 
-        printf("\nMonitoring... (Ctrl+C to retreat to your pillow fort)\n");
+        printf("\nMonitoring... (Iteration %d/10)\n", iterations + 1);
         fflush(stdout);
         sleep(1);
+        iterations++;
     }
+
+    printf("\nMonitoring session complete. Returning to Command Center.\n");
+    printf("Press Enter to continue...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin) == NULL) { /* Ignore */ }
 }
 
 /**
@@ -178,25 +234,32 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int authenticated = 0;
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            goto cleanup;
+        }
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            goto cleanup;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    authenticated = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return authenticated;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -209,15 +272,53 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    int cocaine_dosage = 5; // Default: Recommended (5mg)
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    while (1) {
+        printf("\n--- STNM3K COMMAND CENTER ---\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. VIEW HOLY SCROLLS\n");
+        printf("3. COCAINE DOSAGE SETTINGS (Current: %dmg)\n", cocaine_dosage);
+        printf("4. EXIT (COWARDLY)\n");
+        printf("> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (str_contains_ignore_case(command, "ENGAGE DEFENSES") || str_contains_ignore_case(command, "1")) {
+            engage_defenses(cocaine_dosage);
+        } else if (str_contains_ignore_case(command, "VIEW HOLY SCROLLS") || str_contains_ignore_case(command, "2")) {
+            FILE *fp = fopen(LOG_FILE, "r");
+            if (fp) {
+                char line[256];
+                printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+                while (fgets(line, sizeof(line), fp)) printf("%s", line);
+                fclose(fp);
+                printf("--- END OF SCROLLS ---\n");
+            } else {
+                printf("\n[ERROR] The scrolls are missing! Perhaps a squirrel ate them?\n");
+            }
+            printf("\nPress Enter to return to Command Center...");
+            char dummy[10];
+            if (fgets(dummy, sizeof(dummy), stdin) == NULL) { /* Ignore */ }
+        } else if (str_contains_ignore_case(command, "COCAINE DOSAGE") || str_contains_ignore_case(command, "3")) {
+            printf("\n--- COCAINE DOSAGE SETTINGS ---\n");
+            printf("1. Safe (0mg) - For the faint of heart.\n");
+            printf("2. Recommended (5mg) - Polish cow standard.\n");
+            printf("3. CHAOS (50mg) - GLORY BE!\n");
+            printf("> ");
+            if (fgets(command, sizeof(command), stdin) != NULL) {
+                if (str_contains_ignore_case(command, "50mg") || str_contains_ignore_case(command, "3") || str_contains_ignore_case(command, "CHAOS")) {
+                    cocaine_dosage = 50;
+                } else if (str_contains_ignore_case(command, "5mg") || str_contains_ignore_case(command, "2") || str_contains_ignore_case(command, "Recommended")) {
+                    cocaine_dosage = 5;
+                } else if (str_contains_ignore_case(command, "0mg") || str_contains_ignore_case(command, "1") || str_contains_ignore_case(command, "Safe")) {
+                    cocaine_dosage = 0;
+                }
+            }
+        } else if (str_contains_ignore_case(command, "EXIT") || str_contains_ignore_case(command, "4")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
