@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -32,6 +33,28 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Portable case-insensitive string search.
+ * @return 1 if needle is in haystack, 0 otherwise.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        size_t j;
+        for (j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == needle_len) return 1;
+    }
+    return 0;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -186,16 +209,17 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
+            printf("%s[ACCEPTED]%s\n", GRN, RESET);
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s Incorrect prayer.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
     return 1;
 }
 
@@ -214,10 +238,10 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (str_contains_ignore_case(command, "ENGAGE") || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("\n%s[OFFLINE]%s Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n", RED, RESET);
     }
 
     return 0;
