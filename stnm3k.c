@@ -19,17 +19,21 @@
 #include <sys/types.h>
 
 /* --- CONFIGURATION MACROS --- */
-#define VERSION "0.69"
-#define PLATFORM "WINDOWS ME (GLORY BE)"
-#define LOG_DIR "logs"
-#define LOG_FILE "logs/holy_scrolls.txt"
-#define METER_WIDTH 20
+#define VERSION            "0.69"
+#define PLATFORM           "WINDOWS ME (GLORY BE)"
+#define LOG_DIR            "logs"
+#define LOG_FILE           "logs/holy_scrolls.txt"
+#define METER_WIDTH        20
+#define GRAPH_HEIGHT       5
+#define MAX_GRAPH_VAL      20
+#define THREAT_MAX_CHANGE  15
 
-/* ANSI Colors */
-#define RED "\x1B[31m"
-#define GRN "\x1B[32m"
-#define YEL "\x1B[33m"
-#define RESET "\x1B[0m"
+/* ANSI Sequences */
+#define RED                "\x1B[31m"
+#define GRN                "\x1B[32m"
+#define YEL                "\x1B[33m"
+#define RESET              "\x1B[0m"
+#define CLEAR_SCREEN       "\033[H\033[J"
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -42,6 +46,17 @@ void init_system() {
     if (stat(LOG_DIR, &st) == -1) {
         mkdir(LOG_DIR, 0700);
     }
+}
+
+/**
+ * Securely wipes memory to prevent sensitive data leakage.
+ * Uses a volatile pointer to prevent compiler optimization.
+ * @param v The pointer to the memory to wipe.
+ * @param n The number of bytes to wipe.
+ */
+void secure_memzero(void *v, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)v;
+    while (n--) *p++ = 0;
 }
 
 /**
@@ -93,18 +108,20 @@ void print_threat_meter(int level) {
 }
 
 /**
- * Renders the GUI graph of chaos.
+ * Renders the GUI graph of chaos showing network volatility.
  */
 void print_graph_of_chaos() {
+    static const char x_buf[] = "XXXXXXXXXXXXXXXXXXXX";
+    static const char s_buf[] = "********************";
+    static const char d_buf[] = "....................";
+
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
-    for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
+    for (int i = GRAPH_HEIGHT; i > 0; i--) {
+        int val = rand() % MAX_GRAPH_VAL;
         printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
+        if (val > 15)      printf("%.*s", val, x_buf);
+        else if (val > 8)  printf("%.*s", val, s_buf);
+        else               printf("%.*s", val, d_buf);
         printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
@@ -114,9 +131,10 @@ void print_graph_of_chaos() {
 
 /**
  * Returns a random threat message for the paranoid user.
+ * @return A static string containing the threat description.
  */
 const char* get_random_threat() {
-    const char* threats[] = {
+    static const char* const threats[] = {
         "WiFi Acorn detected in sector 7!",
         "Bush-based spy spotted near router!",
         "Talibani rodent infiltrating sacred machine!",
@@ -130,7 +148,7 @@ const char* get_random_threat() {
 }
 
 /**
- * Enters the main monitoring loop.
+ * Enters the main monitoring loop, displaying real-time threat levels.
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
@@ -139,13 +157,13 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        // Clear screen
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int change = (rand() % (THREAT_MAX_CHANGE * 2 + 1)) - THREAT_MAX_CHANGE;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -184,23 +202,32 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
 
+    secure_memzero(command, sizeof(command));
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
     return 1;
 }
 
 /* --- MAIN ENTRY POINT --- */
 
+/**
+ * Main entry point of the STNM3K application.
+ * @return 0 on successful exit, 1 on authentication failure.
+ */
 int main() {
     init_system();
 
