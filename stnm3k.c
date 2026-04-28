@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,6 +26,8 @@
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
 
+int raw_alert_enabled = 0;
+
 /* ANSI Colors */
 #define RED "\x1B[31m"
 #define GRN "\x1B[32m"
@@ -32,6 +35,27 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Case-insensitive substring search.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t h_len = strlen(haystack);
+    size_t n_len = strlen(needle);
+    if (n_len > h_len) return 0;
+
+    for (size_t i = 0; i <= h_len - n_len; i++) {
+        size_t j;
+        for (j = 0; j < n_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == n_len) return 1;
+    }
+    return 0;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -65,6 +89,52 @@ void log_event(const char *event) {
 
     fprintf(fp, "[%s] COCAINE-COW-LOG: %s\n", timestamp, event);
     fclose(fp);
+}
+
+/**
+ * Reads and prints the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("\n[OFFLINE] No holy scrolls found. The squirrels must have eaten them.\n");
+        return;
+    }
+
+    printf("\n--- THE HOLY SCROLLS OF TRUTH ---\n");
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        printf("%s", line);
+    }
+    fclose(fp);
+    printf("\n--- END OF SCROLLS ---\n");
+    printf("\nPress Enter to return to command center...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Consume input */ }
+}
+
+/**
+ * Broadcasts a message through the fungal network.
+ */
+void broadcast_fungal_message() {
+    char message[100];
+    printf("\n--- FUNGAL NETWORK MESSAGING INTERFACE ---\n");
+    printf("Enter message to encrypt and broadcast:\n> ");
+    if (fgets(message, sizeof(message), stdin) == NULL) return;
+
+    // Remove newline
+    message[strcspn(message, "\n")] = 0;
+
+    printf("\nEncrypting using mycelium-based algorithms...\n");
+    printf("[SUCCESS] Message broadcast to all pillow forts.\n");
+
+    char log_msg[150];
+    snprintf(log_msg, sizeof(log_msg), "FUNGAL BROADCAST: %s", message);
+    log_event(log_msg);
+
+    printf("\nPress Enter to return...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Consume input */ }
 }
 
 /* --- VISUALIZATION ENGINE --- */
@@ -113,6 +183,22 @@ void print_graph_of_chaos() {
 /* --- CORE ENGINE LOGIC --- */
 
 /**
+ * Toggles RAW-ALERT mode.
+ */
+void toggle_raw_alert() {
+    raw_alert_enabled = !raw_alert_enabled;
+    printf("\nRAW-ALERT MODE: %s%s%s\n",
+           raw_alert_enabled ? RED : GRN,
+           raw_alert_enabled ? "[ACTIVE]" : "[OFFLINE]",
+           RESET);
+    log_event(raw_alert_enabled ? "RAW-ALERT MODE ENGAGED." : "RAW-ALERT MODE DISENGAGED.");
+
+    printf("\nPress Enter to return...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Consume input */ }
+}
+
+/**
  * Returns a random threat message for the paranoid user.
  */
 const char* get_random_threat() {
@@ -143,9 +229,15 @@ void engage_defenses() {
         printf("\033[H\033[J");
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
+        printf("PLATFORM: %s\n", PLATFORM);
+        printf("RAW-ALERT: %s%s%s\n\n",
+               raw_alert_enabled ? RED : GRN,
+               raw_alert_enabled ? "[ACTIVE]" : "[OFFLINE]",
+               RESET);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int max_change = raw_alert_enabled ? 50 : 31;
+        int offset = raw_alert_enabled ? 20 : 15;
+        int change = (rand() % max_change) - offset;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -209,15 +301,35 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf("\033[H\033[J");
+        printf("🖥️  STNM3K v%s COMMAND CENTER\n", VERSION);
+        printf("RAW-ALERT: %s%s%s\n\n",
+               raw_alert_enabled ? RED : GRN,
+               raw_alert_enabled ? "[ACTIVE]" : "[OFFLINE]",
+               RESET);
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. READ HOLY SCROLLS (LOGS)\n");
+        printf("3. BROADCAST FUNGAL MESSAGE\n");
+        printf("4. TOGGLE RAW-ALERT MODE\n");
+        printf("5. EXIT (COWARDLY)\n");
+        printf("\n> ");
+
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (strstr(command, "1") != NULL || str_contains_ignore_case(command, "ENGAGE")) {
+            engage_defenses();
+        } else if (strstr(command, "2") != NULL || str_contains_ignore_case(command, "READ")) {
+            view_holy_scrolls();
+        } else if (strstr(command, "3") != NULL || str_contains_ignore_case(command, "BROADCAST")) {
+            broadcast_fungal_message();
+        } else if (strstr(command, "4") != NULL || str_contains_ignore_case(command, "TOGGLE")) {
+            toggle_raw_alert();
+        } else if (strstr(command, "5") != NULL || str_contains_ignore_case(command, "EXIT")) {
+            printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+            break;
+        }
     }
 
     return 0;
