@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +25,8 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define THREAT_MAX_CHANGE 15
+#define CLEAR_SCREEN "\033[H\033[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -32,6 +35,28 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Case-insensitive search for needle in haystack.
+ * @return 1 if found, 0 otherwise.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        size_t j;
+        for (j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                break;
+            }
+        }
+        if (j == needle_len) return 1;
+    }
+    return 0;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -112,6 +137,58 @@ void print_graph_of_chaos() {
 
 /* --- CORE ENGINE LOGIC --- */
 
+int raw_alert_enabled = 0;
+
+/**
+ * Displays the holy scrolls of truth.
+ */
+void view_holy_scrolls() {
+    printf(CLEAR_SCREEN);
+    printf("--- HOLY SCROLLS OF TRUTH ---\n\n");
+    FILE *fp = fopen(LOG_FILE, "r");
+    if (fp == NULL) {
+        printf("The scrolls are empty. The cows are silent.\n");
+    } else {
+        char line[256];
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%s", line);
+        }
+        fclose(fp);
+    }
+    printf("\n[END OF SCROLLS]\n");
+    printf("Press Enter to return to command center...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin) == NULL) {
+        // Handle EOF or error if necessary
+    }
+}
+
+/**
+ * Broadcasts a fungal message into the logs.
+ */
+void broadcast_fungal_message() {
+    char message[100];
+    printf("\nEnter fungal message to broadcast: ");
+    if (fgets(message, sizeof(message), stdin)) {
+        message[strlen(message) - 1] = '\0'; // Remove newline
+        log_event(message);
+        printf("%s[SUCCESS]%s Message pulsed through the fungal network.\n", GRN, RESET);
+        sleep(1);
+    }
+}
+
+/**
+ * Toggles the RAW-ALERT mode.
+ */
+void toggle_raw_alert() {
+    raw_alert_enabled = !raw_alert_enabled;
+    const char *status = raw_alert_enabled ? "ENABLED" : "DISABLED";
+    const char *color = raw_alert_enabled ? RED : GRN;
+    printf("\nRAW-ALERT MODE: %s[%s]%s\n", color, status, RESET);
+    log_event(raw_alert_enabled ? "RAW-ALERT MODE ENGAGED" : "RAW-ALERT MODE STANDBY");
+    sleep(1);
+}
+
 /**
  * Returns a random threat message for the paranoid user.
  */
@@ -133,19 +210,21 @@ const char* get_random_threat() {
  * Enters the main monitoring loop.
  */
 void engage_defenses() {
-    printf("\n--- ENGAGING DEFENSES ---\n");
+    printf("\n%s[INITIALIZING]%s ENGAGING DEFENSES...\n", YEL, RESET);
+    sleep(1);
     printf("GLORY BE! GLORY BE! GLORY BE!\n");
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
 
-        int change = (rand() % 31) - 15; // -15 to +15
+        int max_change = raw_alert_enabled ? (THREAT_MAX_CHANGE * 2) : THREAT_MAX_CHANGE;
+        int change = (rand() % (max_change * 2 + 1)) - max_change;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -186,16 +265,20 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf("Press Enter to acknowledge your failure...");
+            char dummy[10];
+            if (fgets(dummy, sizeof(dummy), stdin) == NULL) { /* Handle EOF */ }
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[ACCEPTED]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
+    sleep(1);
     return 1;
 }
 
@@ -209,15 +292,34 @@ int main() {
     }
 
     char command[100];
-    printf("1. ENGAGE DEFENSES\n");
-    printf("2. EXIT (COWARDLY)\n");
-    printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    while (1) {
+        printf(CLEAR_SCREEN);
+        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000\n");
+        printf("Welcome, Sentinel. Choose your path:\n\n");
+        printf("1. ENGAGE DEFENSES\n");
+        printf("2. READ HOLY SCROLLS (LOGS)\n");
+        printf("3. BROADCAST FUNGAL MESSAGE\n");
+        printf("4. TOGGLE RAW-ALERT MODE\n");
+        printf("5. EXIT\n");
+        printf("\n> ");
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        if (fgets(command, sizeof(command), stdin) == NULL) break;
+
+        if (str_contains_ignore_case(command, "ENGAGE DEFENSES") || str_contains_ignore_case(command, "1")) {
+            engage_defenses();
+        } else if (str_contains_ignore_case(command, "READ HOLY SCROLLS") || str_contains_ignore_case(command, "2")) {
+            view_holy_scrolls();
+        } else if (str_contains_ignore_case(command, "BROADCAST FUNGAL MESSAGE") || str_contains_ignore_case(command, "3")) {
+            broadcast_fungal_message();
+        } else if (str_contains_ignore_case(command, "TOGGLE RAW-ALERT") || str_contains_ignore_case(command, "4")) {
+            toggle_raw_alert();
+        } else if (str_contains_ignore_case(command, "EXIT") || str_contains_ignore_case(command, "5")) {
+            printf("Exiting... Your pillow fort remains (mostly) secure.\n");
+            break;
+        } else {
+            printf("\n%s[INVALID]%s Command not recognized by the Google Machine.\n", RED, RESET);
+            sleep(1);
+        }
     }
 
     return 0;
