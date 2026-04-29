@@ -45,6 +45,16 @@ void init_system() {
 }
 
 /**
+ * Securely wipes a memory buffer using a volatile pointer.
+ * @param p Pointer to the buffer.
+ * @param len Length of the buffer.
+ */
+static void secure_memzero(void *p, size_t len) {
+    volatile unsigned char *ptr = (volatile unsigned char *)p;
+    while (len--) *ptr++ = 0;
+}
+
+/**
  * Logs a message to the holy scrolls of truth.
  * @param event The event message to log.
  */
@@ -184,13 +194,21 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
+            secure_memzero(command, sizeof(command));
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
+            printf("Press Enter to continue...");
+            if (fgets(command, sizeof(command), stdin) == NULL) {}
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
@@ -212,11 +230,16 @@ int main() {
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    if (fgets(command, sizeof(command), stdin) == NULL) {
+        secure_memzero(command, sizeof(command));
+        return 0;
+    }
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        secure_memzero(command, sizeof(command));
         engage_defenses();
     } else {
+        secure_memzero(command, sizeof(command));
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
 
