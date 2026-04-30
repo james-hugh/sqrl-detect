@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -24,6 +25,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\033[H\033[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -32,6 +34,24 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Case-insensitive substring search.
+ * @param h The string to search in.
+ * @param n The string to search for.
+ * @return 1 if found, 0 otherwise.
+ */
+static int str_contains_ignore_case(const char *h, const char *n) {
+    if (!h || !n) return 0;
+    for (; *h; h++) {
+        const char *hptr = h, *nptr = n;
+        while (*hptr && *nptr && tolower((unsigned char)*hptr) == tolower((unsigned char)*nptr)) {
+            hptr++; nptr++;
+        }
+        if (!*nptr) return 1;
+    }
+    return 0;
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -134,13 +154,14 @@ const char* get_random_threat() {
  */
 void engage_defenses() {
     printf("\n--- ENGAGING DEFENSES ---\n");
-    printf("GLORY BE! GLORY BE! GLORY BE!\n");
+    printf("%s[INITIALIZING]%s GLORY BE! GLORY BE! GLORY BE!\n", YEL, RESET);
+    sleep(1);
     log_event("DEFENSES ENGAGED. SHARPENING ACORNS.");
 
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -186,16 +207,21 @@ int authenticate_user() {
         printf("(%d/3) > ", prayer_count + 1);
         if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
+            printf("%s[ACCEPTED]%s\n", GRN, RESET);
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            printf("\nPress Enter to exit...");
+            char dummy[10];
+            if (fgets(dummy, sizeof(dummy), stdin)) { /* Wait for user input */ }
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
+    sleep(1);
     return 1;
 }
 
@@ -214,11 +240,15 @@ int main() {
     printf("> ");
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+    if (str_contains_ignore_case(command, "ENGAGE DEFENSES") || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
+
+    printf("\nPress Enter to exit...");
+    char dummy[10];
+    if (fgets(dummy, sizeof(dummy), stdin)) { /* Wait for user input */ }
 
     return 0;
 }
