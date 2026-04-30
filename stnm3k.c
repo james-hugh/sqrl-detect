@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,6 +31,46 @@
 #define GRN "\x1B[32m"
 #define YEL "\x1B[33m"
 #define RESET "\x1B[0m"
+
+/* --- SECURITY UTILITIES --- */
+
+/**
+ * Safely clears sensitive memory by using a volatile pointer to prevent compiler optimization.
+ * @param p Pointer to the memory to clear.
+ * @param len Length of the memory to clear.
+ */
+static void secure_memzero(void *p, size_t len) {
+    volatile unsigned char *ptr = (volatile unsigned char *)p;
+    while (len--) {
+        *ptr++ = 0;
+    }
+}
+
+/**
+ * Portable case-insensitive substring search.
+ * @param haystack The string to search in.
+ * @param needle The substring to search for.
+ * @return 1 if needle is found in haystack, 0 otherwise.
+ */
+static int str_contains_ignore_case(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return 0;
+    size_t haystack_len = strlen(haystack);
+    size_t needle_len = strlen(needle);
+
+    if (needle_len > haystack_len) return 0;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        int match = 1;
+        for (size_t j = 0; j < needle_len; j++) {
+            if (tolower((unsigned char)haystack[i + j]) != tolower((unsigned char)needle[j])) {
+                match = 0;
+                break;
+            }
+        }
+        if (match) return 1;
+    }
+    return 0;
+}
 
 /* --- CORE SYSTEM UTILITIES --- */
 
@@ -184,18 +225,23 @@ int authenticate_user() {
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            secure_memzero(command, sizeof(command));
+            return 0;
+        }
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        if (str_contains_ignore_case(command, "GLORY BE")) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
+            secure_memzero(command, sizeof(command));
             return 0;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    secure_memzero(command, sizeof(command));
     return 1;
 }
 
