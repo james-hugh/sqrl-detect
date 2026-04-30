@@ -97,15 +97,21 @@ void print_threat_meter(int level) {
  */
 void print_graph_of_chaos() {
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
+    // Optimization: Use static buffers and precision specifier to reduce printf calls.
+    // This batches the output and avoids character-by-character loops, reducing syscall overhead.
+    static const char xs[]    = "XXXXXXXXXXXXXXXXXXXX";
+    static const char stars[] = "********************";
+    static const char dots[]  = "....................";
+
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
+        if (val > 15) {
+            printf("%2d |%.*s\n", val, val, xs);
+        } else if (val > 8) {
+            printf("%2d |%.*s\n", val, val, stars);
+        } else {
+            printf("%2d |%.*s\n", val, val, dots);
         }
-        printf("\n");
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
