@@ -34,11 +34,12 @@ Optional: feed your Polish cow 5mg of cocaine for optimal alert synergy.
 
 🕹️ Usage
 
-Click ENGAGE DEFENSES to start monitoring.
-
-Watch the SQUIRREL THREAT METER spike with every WiFi ping.
-
-Check logs/holy_scrolls.txt for suspicious activity.
+1. **Authentication**: Recite the sacred prayer ("GLORY BE") three times (case-insensitive).
+2. **Command Center**: Navigate the persistent menu to manage your defenses.
+3. **Engage Defenses**: Start real-time network monitoring with chaos-theory visualization.
+4. **Read Holy Scrolls**: View the `logs/holy_scrolls.txt` directly from the interface.
+5. **Broadcast Message**: Send your own custom encrypted alerts to the fungal network.
+6. **RAW-ALERT Mode**: Toggle for maximum volatility—forces the system into a high-sensitivity state.
 
 If the cows start running laps at 3 AM, congratulations—you’ve triggered MAXIMUM ALERT MODE.
 
