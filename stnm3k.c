@@ -34,6 +34,16 @@
 /* --- CORE SYSTEM UTILITIES --- */
 
 /**
+ * Securely wipes memory by using a volatile pointer to prevent compiler optimization.
+ * @param s Pointer to the memory to wipe.
+ * @param n Number of bytes to wipe.
+ */
+static void secure_memzero(void *s, size_t n) {
+    volatile unsigned char *p = (volatile unsigned char *)s;
+    while (n--) *p++ = 0;
+}
+
+/**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
@@ -178,25 +188,33 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int result = 0;
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) goto cleanup;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Remove trailing newline
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            goto cleanup;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    result = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return result;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -215,8 +233,10 @@ int main() {
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        secure_memzero(command, sizeof(command));
         engage_defenses();
     } else {
+        secure_memzero(command, sizeof(command));
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
     }
 
