@@ -37,6 +37,7 @@
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
  */
 void init_system() {
+    printf("%s[INITIALIZING]%s STNM3K system components...\n", YEL, RESET);
     srand(time(NULL));
     struct stat st = {0};
     if (stat(LOG_DIR, &st) == -1) {
@@ -189,13 +190,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s INCORRECT PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
     return 1;
 }
 
@@ -217,7 +218,7 @@ int main() {
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("%s[EXITED]%s Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n", RED, RESET);
     }
 
     return 0;
