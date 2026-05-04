@@ -24,6 +24,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -140,7 +141,7 @@ void engage_defenses() {
     int threat_level = 10;
     while (1) {
         // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        printf(CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -179,7 +180,8 @@ int authenticate_user() {
     char command[100];
     int prayer_count = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf(CLEAR_SCREEN);
+    printf("%s[INITIALIZING]%s 🖥️  STNM3K v%s INITIALIZED\n", YEL, RESET, VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
@@ -189,13 +191,13 @@ int authenticate_user() {
         if (strstr(command, "GLORY BE") != NULL) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s INCORRECT PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
             return 0;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
     return 1;
 }
 
@@ -217,7 +219,7 @@ int main() {
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("%s[EXITED]%s Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n", RED, RESET);
     }
 
     return 0;
