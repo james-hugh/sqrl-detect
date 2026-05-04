@@ -24,6 +24,10 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define GRAPH_HEIGHT 5
+#define MAX_GRAPH_VAL 20
+#define THREAT_MAX_CHANGE 15
+#define CLEAR_SCREEN "\033[H\033[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -32,6 +36,16 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Wipes a buffer from memory to prevent sensitive data leakage.
+ */
+void secure_memzero(void *v, size_t n) {
+    if (v == NULL) return;
+    memset(v, 0, n);
+    /* Compiler barrier to prevent the call from being optimized away */
+    __asm__ __volatile__("" : : "r"(v) : "memory");
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -70,6 +84,17 @@ void log_event(const char *event) {
 /* --- VISUALIZATION ENGINE --- */
 
 /**
+ * Renders the decorative system header.
+ */
+void print_header() {
+    printf(CLEAR_SCREEN);
+    printf("%s====================================================%s\n", YEL, RESET);
+    printf("%s   STNM3K - SQUIRREL TERMINATOR NETWORK MONITOR   %s\n", GRN, RESET);
+    printf("%s====================================================%s\n", YEL, RESET);
+    printf(" VERSION: %s | PLATFORM: %s\n\n", VERSION, PLATFORM);
+}
+
+/**
  * Renders the squirrel threat meter.
  * @param level Threat level from 0 to 100.
  */
@@ -96,16 +121,16 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char graph_chars[] = "XXXXXXXXXXXXXXXXXXXX********************....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
-    for (int i = 5; i > 0; i--) {
-        int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+    for (int i = GRAPH_HEIGHT; i > 0; i--) {
+        int val = rand() % MAX_GRAPH_VAL;
+        const char *marker_set;
+        if (val > 15) marker_set = graph_chars;
+        else if (val > 8) marker_set = graph_chars + 20;
+        else marker_set = graph_chars + 40;
+
+        printf("%2d |%.*s\n", val, val, marker_set);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -139,13 +164,9 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        print_header();
 
-        printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
-        printf("PLATFORM: %s\n\n", PLATFORM);
-
-        int change = (rand() % 31) - 15; // -15 to +15
+        int change = (rand() % (2 * THREAT_MAX_CHANGE + 1)) - THREAT_MAX_CHANGE;
         threat_level += change;
         if (threat_level < 0) threat_level = 0;
         if (threat_level > 100) threat_level = 100;
@@ -178,25 +199,33 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int success = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf("%s[INITIALIZING]%s STNM3K v%s\n", YEL, RESET, VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) goto cleanup;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Trim trailing newline
+        command[strcspn(command, "\r\n")] = 0;
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            goto cleanup;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
+    success = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return success;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -209,15 +238,21 @@ int main() {
     }
 
     char command[100];
+    printf("\n--- MAIN MENU ---\n");
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+    if (fgets(command, sizeof(command), stdin) == NULL) {
+        secure_memzero(command, sizeof(command));
+        return 0;
+    }
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        secure_memzero(command, sizeof(command));
         engage_defenses();
     } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        printf("%s[EXITED]%s Cowardice detected. The squirrels have already won.\n", RED, RESET);
+        secure_memzero(command, sizeof(command));
     }
 
     return 0;
