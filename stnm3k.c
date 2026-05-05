@@ -24,6 +24,7 @@
 #define LOG_DIR "logs"
 #define LOG_FILE "logs/holy_scrolls.txt"
 #define METER_WIDTH 20
+#define CLEAR_SCREEN "\x1B[H\x1B[J"
 
 /* ANSI Colors */
 #define RED "\x1B[31m"
@@ -32,6 +33,15 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Securely zeros memory to prevent optimization by the compiler.
+ */
+static void secure_memzero(void *s, size_t n) {
+    volatile unsigned char *p = s;
+    while (n--) *p++ = 0;
+    __asm__ __volatile__("" : : "r"(s) : "memory");
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -96,16 +106,15 @@ void print_threat_meter(int level) {
  * Renders the GUI graph of chaos.
  */
 void print_graph_of_chaos() {
+    static const char bars[] = "XXXXXXXXXXXXXXXXXXXX********************....................";
     printf("GUI GRAPH OF CHAOS (Network Volatility):\n");
     for (int i = 5; i > 0; i--) {
         int val = rand() % 20;
-        printf("%2d |", val);
-        for (int j = 0; j < val; j++) {
-            if (val > 15) printf("X");
-            else if (val > 8) printf("*");
-            else printf(".");
-        }
-        printf("\n");
+        const char *segment = bars;
+        if (val <= 8) segment = bars + 40;
+        else if (val <= 15) segment = bars + 20;
+
+        printf("%2d |%.*s\n", val, val, segment);
     }
     printf("   +-------------------- (Acorns/sec)\n");
 }
@@ -139,8 +148,8 @@ void engage_defenses() {
 
     int threat_level = 10;
     while (1) {
-        // Clear screen (works on most terminals)
-        printf("\033[H\033[J");
+        // Clear screen
+        printf("%s", CLEAR_SCREEN);
 
         printf("🖥️  SQUIRREL TERMINATOR NETWORK MONITOR 3000 (STNM3K) v%s\n", VERSION);
         printf("PLATFORM: %s\n\n", PLATFORM);
@@ -178,25 +187,33 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int success = 0;
 
-    printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
+    printf("%s[INITIALIZING]%s 🖥️  STNM3K v%s\n", YEL, RESET, VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) goto cleanup;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Trim trailing newline
+        command[strcspn(command, "\r\n")] = '\0';
+
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
-            printf("\nINCORRECT PRAYER.\n");
+            printf("\n%s[INCORRECT]%s PRAYER.\n", RED, RESET);
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            goto cleanup;
         }
     }
 
-    printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    printf("\n%s[SUCCESS]%s Authentication successful. Welcome, Sentinel.\n", GRN, RESET);
+    success = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return success;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -212,13 +229,18 @@ int main() {
     printf("1. ENGAGE DEFENSES\n");
     printf("2. EXIT (COWARDLY)\n");
     printf("> ");
-    if (fgets(command, sizeof(command), stdin) == NULL) return 0;
-
-    if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
-        engage_defenses();
-    } else {
-        printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+    if (fgets(command, sizeof(command), stdin) == NULL) {
+        secure_memzero(command, sizeof(command));
+        return 0;
     }
 
+    if (strstr(command, "1") != NULL || strstr(command, "ENGAGE DEFENSES") != NULL) {
+        secure_memzero(command, sizeof(command));
+        engage_defenses();
+    } else {
+        printf("%s[EXITED]%s Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n", RED, RESET);
+    }
+
+    secure_memzero(command, sizeof(command));
     return 0;
 }
