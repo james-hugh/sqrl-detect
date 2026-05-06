@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -32,6 +33,18 @@
 #define RESET "\x1B[0m"
 
 /* --- CORE SYSTEM UTILITIES --- */
+
+/**
+ * Securely zeros memory and prevents compiler optimization.
+ */
+void secure_memzero(void *v, size_t n) {
+    if (v == NULL || n == 0) return;
+    volatile uint8_t *p = (volatile uint8_t *)v;
+    while (n--) {
+        *p++ = 0;
+    }
+    __asm__ __volatile__("" : : "r"(v) : "memory");
+}
 
 /**
  * Initializes the system by seeding the RNG and ensuring the log directory exists.
@@ -178,25 +191,34 @@ void engage_defenses() {
 int authenticate_user() {
     char command[100];
     int prayer_count = 0;
+    int authenticated = 0;
 
     printf("🖥️  STNM3K v%s INITIALIZED\n", VERSION);
     printf("Recite \"GLORY BE\" three times to proceed.\n");
 
     while (prayer_count < 3) {
         printf("(%d/3) > ", prayer_count + 1);
-        if (fgets(command, sizeof(command), stdin) == NULL) return 0;
+        if (fgets(command, sizeof(command), stdin) == NULL) goto cleanup;
 
-        if (strstr(command, "GLORY BE") != NULL) {
+        // Strip trailing newline
+        command[strcspn(command, "\r\n")] = 0;
+
+        // Use strcmp for exact match to prevent bypasses like "NOT GLORY BE"
+        if (strcmp(command, "GLORY BE") == 0) {
             prayer_count++;
         } else {
             printf("\nINCORRECT PRAYER.\n");
             printf("The Polish cows are disappointed and the Google Machine is laughing at you.\n");
-            return 0;
+            goto cleanup;
         }
     }
 
     printf("\nAuthentication successful. Welcome, Sentinel.\n");
-    return 1;
+    authenticated = 1;
+
+cleanup:
+    secure_memzero(command, sizeof(command));
+    return authenticated;
 }
 
 /* --- MAIN ENTRY POINT --- */
@@ -215,9 +237,11 @@ int main() {
     if (fgets(command, sizeof(command), stdin) == NULL) return 0;
 
     if (strstr(command, "ENGAGE DEFENSES") != NULL || strstr(command, "1") != NULL) {
+        secure_memzero(command, sizeof(command));
         engage_defenses();
     } else {
         printf("Cowardice detected. The squirrels have already won. Your pillow fort is compromised.\n");
+        secure_memzero(command, sizeof(command));
     }
 
     return 0;
